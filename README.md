@@ -1,8 +1,6 @@
 # bilibili-live-tools
 
-学业繁忙，准备弃坑咕咕咕，风暴初版已上传，不再更新后几版
-
-目前已完成：
+ Dawnnnnnn作者目前已完成：
 
     自动每日签到
     自动app端心跳领取直播经验
@@ -18,8 +16,9 @@
     pc端登陆
     节奏风暴领取
 
+> 本branch会持续进行更新
 
-环境:python3.6
+环境:大于python3.5
 
 第三方库配置:
 
@@ -28,7 +27,7 @@ pip install requests
 pip install aiohttp
 
 
-引用代码作者github:https://github.com/lyyyuna
+引用的代码作者github:https://github.com/lyyyuna
 
 
 
