@@ -26,7 +26,7 @@ pip install requests
 
 pip install aiohttp
 
-
+（支持最新版桃花）
 引用的代码作者github:https://github.com/lyyyuna
 
 
