@@ -1,35 +1,50 @@
 # bilibili-live-tools
 
- Dawnnnnnn作者目前已完成：
+项目经过了一天的重构，能够运行一个文件实现大多数功能了，就是需要输入好多遍账号密码.....(会修复的，flag)
 
-    自动每日签到
-    自动app端心跳领取直播经验
-    自动pc端心跳领取直播经验
-    自动领取每日银瓜子
-    自动领取每日任务奖励
-    双端观看直播五分钟
-    新春抽奖双端抽奖
-    小电视PC端抽奖
-    自动领取每日包裹奖励
-    分享直播间任务
-    app端登陆
-    pc端登陆
-    节奏风暴领取
+学业繁忙，准备弃坑咕咕咕，风暴初版已上传，不再更新后几版
 
-> 本branch会持续进行更新（目标优化storm，目前风暴效果不佳）
+//时隔多日打算学一下图形化，说不定会以这个项目作为样本(flag)
 
-环境:大于python3.5
+目前已完成：
+
+        每日签到
+        双端心跳领取经验
+        领取银瓜子宝箱
+        提交每日任务
+        漫天花雨双端抽奖
+        小电视PC端抽奖
+        领取每日包裹奖励
+        应援团签到
+        实物抽奖(实验性)
+        获取心跳礼物(实验性)
+        节奏风暴领取(单文件实验性)
+
+
+环境:
+    
+        python3.6
 
 第三方库配置:
 
-pip install requests
+        pip install requests
+        pip install rsa
+        pip install aiohttp
 
-pip install aiohttp
+更新说明(3.21):
 
-（支持最新版桃花）
-引用的代码作者github:https://github.com/lyyyuna
+        实物抽奖为实验性功能，只过滤了“测试”关键字，功能默认开启，风险在pull requests中有说明,
+        如不想打开本功能，请用记事本编辑OnlineHeart.py文件的最后几行，将“self.draw_lottery()“这行删掉即可
 
+使用方法：
 
+        python run.py
+    
+        然后输入好几遍账号密码就行了233333
+
+引用代码作者github:https://github.com/lyyyuna
+
+本项目采用MIT开源协议
 
 
 
