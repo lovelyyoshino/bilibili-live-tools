@@ -1,11 +1,11 @@
-from login import Login
+from bilibili import bilibili
 import hashlib
 import requests
 import datetime
 import time
 import asyncio
 
-class Silver(Login):
+class Silver(bilibili):
     # 获取当前系统时间的unix时间戳
     def CurrentTime(self):
         currenttime = str(int(time.mktime(datetime.datetime.now().timetuple())))
@@ -25,11 +25,11 @@ class Silver(Login):
         hash.update(params.encode('utf-8'))
         GetTask_url = 'https://api.live.bilibili.com/mobile/freeSilverCurrentTask?' + temp_params + '&sign=' + str(
             hash.hexdigest())
-        response = self.ses.get(GetTask_url)
+        response = requests.get(GetTask_url,headers=self.appheaders)
         temp = response.json()
         # print (temp['code'])    #宝箱领完返回的code为-10017
         if temp['code'] == -10017:
-            print("今天的瓜子领完了")
+            print("# 今日宝箱领取完毕")            
         else:
             time_start = temp['data']['time_start']
             return str(time_start)
@@ -64,21 +64,21 @@ class Silver(Login):
             url = 'https://api.live.bilibili.com/mobile/freeSilverAward?' + temp_params + '&sign=' + str(
                 hash.hexdigest())
             response = requests.get(url, headers=self.appheaders)
-            print(response.json())
+            #print(response.json())
             return response.json()['code']
         except:
             pass
 
     async def run(self):
         while 1:
+            print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())), "检查宝箱状态")
             temp = self.GetAward()
             if temp == None or temp == -10017:
-                print("当前时间:", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-                print("半小时后检测一次是否到第二天了")
+                #print("# 半小时后检测是否第二天了")               
                 await asyncio.sleep(1800)
             elif temp == 0:
-                print("当前时间:", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+                print("# 打开了宝箱")
                 self.GetAward()
             else:
-                print("当前时间:", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+                print("# 继续等待宝箱冷却...")
                 await asyncio.sleep(181)

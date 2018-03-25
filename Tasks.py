@@ -1,4 +1,4 @@
-from login import Login
+from bilibili import bilibili
 import hashlib
 import datetime
 import requests
@@ -6,14 +6,16 @@ import time
 import asyncio
 
 
-class Tasks(Login):
+class Tasks(bilibili):
 
     # 获取每日包裹奖励
     def Daily_bag(self):
         url = 'http://api.live.bilibili.com/gift/v2/live/receive_daily_bag'
         response = requests.get(url, headers=self.pcheaders)
         try:
-            print("获得----" + response.json()['data']['bag_list'][0]['bag_name'] + "----成功")
+            print("# 获得-" + response.json()['data']['bag_list'][0]['bag_name'] + "-成功")
+            print("# 获得-" + response.json()['data']['bag_list'][1]['bag_name'] + "-成功")
+            print("# 获得-" + response.json()['data']['bag_list'][2]['bag_name'] + "-成功")
         except:
             pass
 
@@ -26,7 +28,7 @@ class Tasks(Login):
         url = 'https://api.live.bilibili.com/sign/doSign'
         response = requests.get(url, headers=self.pcheaders)
         temp = response.json()
-        print(temp['msg'])
+        print("# 签到状态:",temp['msg'])
 
     # 领取每日任务奖励
     def Daily_Task(self):
@@ -37,7 +39,7 @@ class Tasks(Login):
         response2 = requests.post(url, data=payload2, headers=self.appheaders)
         payload3 = {'task_id': 'share_task'}
         response3 = requests.post(url, data=payload3, headers=self.appheaders)
-        print("今日每日任务已完成")
+        print("# 今日每日任务已完成")
 
     # 应援团签到
     def link_sign(self):
@@ -59,19 +61,19 @@ class Tasks(Login):
             url = "https://api.vc.bilibili.com/link_setting/v1/link_setting/sign_in?"+temp_params+"&sign="+str(hash.hexdigest())
             response = requests.get(url,headers=self.appheaders)
             if (response.json()['data']['status']) == 1:
-                print("应援团 %s 已签到过"  %(i1) )
+                print("# 应援团 %s 已应援过"  %(i1) )
             if (response.json()['data']['status']) == 0:
-                print("应援团 %s 签到成功,获得 %s 点亲密度"  %(i1,response.json()['data']['add_num']))
+                print("# 应援团 %s 应援成功,获得 %s 点亲密度"  %(i1, response.json()['data']['add_num']))
 
     # 扭蛋币
     def redleaf(self):
         url ="http://live.bilibili.com/redLeaf/kingMoneyGift"
         response = requests.get(url,headers=self.pcheaders)
-        print("扭蛋币:",response.json()['msg'])
+        print("# 扭蛋币:",response.json()['msg'])
 
     async def run(self):
         while 1:
-            print("当前时间:", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+            print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())), "每日任务")
             self.DoSign()
             self.Daily_bag()
             self.Daily_Task()
