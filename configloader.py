@@ -7,7 +7,7 @@ def hex_to_rgb_percent(hex_str):
     color = webcolors.hex_to_rgb_percent(hex_str)
     # print([float(i.strip('%'))/100.0 for i in color])
     return [float(i.strip('%'))/100.0 for i in color]
-    
+
 
 # "255 255 255"
 def rgb_to_percent(rgb_str):
@@ -23,7 +23,7 @@ class ConfigLoader():
         # print(self.dic_color)
         
         self.dic_user = self.load_user(userfile)
-        # print(self.dic_user)
+        #print(self.dic_user)
         
         self.dic_bilibili = self.load_bilibili(bilibilifile)
         # print(self.dic_bilibili)
@@ -86,10 +86,24 @@ class ConfigLoader():
         
     def load_user(self, file):
         cf_user = configparser.ConfigParser()
-        # cf_user.read(file)
+        #cf_user.read(file)
         cf_user.read_file(codecs.open(file, "r", "utf8"))
         # print(cf_user._sections['platform']['platform'])
-        return cf_user._sections
+        dic_user = cf_user._sections
+        dictionary ={
+                'True':True, 
+                'False': False,
+                'user': 0,
+                'debug': 1
+            }
+            
+        for i in dic_user['print_control'].keys():
+            dic_user['print_control'][i] = dictionary[dic_user['print_control'][i]]
+            
+        return dic_user
+            
+
+        
         
 
 # configloader = ConfigLoader("color.conf", "user.conf", "bilibili.conf")
