@@ -86,7 +86,12 @@
 
     添加自动清空快到期礼物的功能，添加银瓜子兑换硬币功能
     on/off 的配置选项：1代表on,0代表off
+4.3:
 
+    摸鱼
+4.4:
+
+    调整架构，加入获取验证码的功能
 环境:
 ------  
         python3.6
@@ -94,11 +99,7 @@
 第三方库配置:
 ------
 
-        pip install requests
-        pip install rsa
-        pip install aiohttp
-        pip install webcolors
-
+        pip install -r requirements.txt
 
 使用方法：
 ------
