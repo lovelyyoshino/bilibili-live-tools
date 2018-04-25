@@ -21,10 +21,8 @@ def login():
     
     if ConfigLoader().dic_bilibili['saved-session']['cookie']:
         bilibili().load_session(ConfigLoader().dic_bilibili['saved-session'])
-        if check_token():
-            pass
-        else:
-            refresh_token()
+        if not check_token():
+            RefreshToken()
         print("[{}] {}".format(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())), '重用保存会话信息登陆'))
         return True
 
@@ -85,7 +83,7 @@ def check_token():
     return False
 
         
-def refresh_token():
+def RefreshToken():
     # return
     response = bilibili().request_refresh_token()
     json_response = response.json()

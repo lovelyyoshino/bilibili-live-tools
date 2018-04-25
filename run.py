@@ -13,13 +13,14 @@ import threading
 import os
 import login
 import biliconsole
+from bilitimer import BiliTimer
 
 
 loop = asyncio.get_event_loop()
 fileDir = os.path.dirname(os.path.realpath('__file__'))
-file_color = fileDir + "/conf/color.conf"
-file_user = fileDir + "/conf/user.conf"
-file_bilibili = fileDir + "/conf/bilibili.conf"
+file_color = f'{fileDir}/conf/color.conf'
+file_user = f'{fileDir}/conf/user.conf'
+file_bilibili = f'{fileDir}/conf/bilibili.conf'
 ConfigLoader(colorfile=file_color, userfile=file_user, bilibilifile=file_bilibili)
 
 # print('Hello world.')
@@ -34,6 +35,12 @@ biliconsole.Biliconsole()
 danmu_connection = connect()
 
 
+bili_timer = BiliTimer()
+OnlineHeart.init()
+Tasks.init()
+Silver.init()
+
+
 console_thread = threading.Thread(target=biliconsole.controler)
 
 console_thread.start()
@@ -43,14 +50,15 @@ tasks = [
     # utils.fetch_user_info(),
     # utils.fetch_bag_list(),
     # utils.fetch_medal(),
-
-    OnlineHeart.run(),
-    Silver.run(),
-    Tasks.run(),
+    
+    # OnlineHeart.run(),
+    # Silver.run(),
+    # Tasks.run(),
     danmu_connection.run(),
     LotteryResult.run(),
     rafflehandler.run(),
-    biliconsole.Biliconsole().run()
+    biliconsole.Biliconsole().run(),
+    bili_timer.run()
     
 ]
 try:

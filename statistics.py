@@ -49,7 +49,7 @@ class Statistics:
     def getresult(self):
         print('本次参与抽奖结果为：')
         for k, v in self.result.items():
-            print('{}X{}'.format(k, v))
+            print(f'{k}X{v}')
 
     def delete_0st_activitylist(self):
         del self.activity_roomid_list[0]
@@ -65,13 +65,12 @@ class Statistics:
         # print(self.activity_raffleid_list)
         if self.activity_raffleid_list:
             for i in range(0, len(self.activity_roomid_list)):
-                response = await bilibili().get_activity_result(self.activity_roomid_list[0], self.activity_raffleid_list[0])
-                json_response = await response.json()
+                json_response = await bilibili().get_activity_result(self.activity_roomid_list[0], self.activity_raffleid_list[0])
                 # print(json_response)
                 try:
                     if json_response['code'] == 0:
                         data = json_response['data']
-                        print("# 房间{:^9}网页端活动抽奖结果: {}X{}".format(self.activity_roomid_list[0], data['gift_name'], data['gift_num']))
+                        print(f'# 房间{self.activity_roomid_list[0]:^9}网页端活动抽奖结果: {data["gift_name"]}X{data["gift_num"]}')
                         self.add_to_result(data['gift_name'], int(data['gift_num']))
     
                         self.delete_0st_activitylist()
@@ -96,9 +95,8 @@ class Statistics:
         if self.TV_raffleid_list:
             for i in range(0, len(self.TV_roomid_list)):
 
-                response = await  bilibili().get_TV_result(self.TV_roomid_list[0], self.TV_raffleid_list[0])
+                json_response = await  bilibili().get_TV_result(self.TV_roomid_list[0], self.TV_raffleid_list[0])
                 # if response.json()['data']['gift_name'] != "":
-                json_response = await response.json()
                 # print(json_response)
                 try:
                     # {'code': 0, 'msg': '正在抽奖中..', 'message': '正在抽奖中..', 'data': {'gift_id': '-1', 'gift_name': '', 'gift_num': 0, 'gift_from': '', 'gift_type': 0, 'gift_content': '', 'status': 3}}
@@ -108,7 +106,7 @@ class Statistics:
                     elif json_response['data']['gift_id'] != '-1':
     
                         data = json_response['data']
-                        print("# 房间{:^9}小电视道具抽奖结果: {}X{}".format(self.TV_roomid_list[0], data['gift_name'], data['gift_num']))
+                        print(f'# 房间{self.TV_roomid_list[0]:^9}小电视道具抽奖结果: {data["gift_name"]}X{data["gift_num"]}')
                         self.add_to_result(data['gift_name'], int(data['gift_num']))
     
                         self.delete_0st_TVlist()

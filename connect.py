@@ -21,7 +21,14 @@ class connect():
             print('# 正在启动弹幕姬')
             time_start = int(utils.CurrentTime())
             self.danmuji = bilibiliClient()
-            task_main = asyncio.ensure_future(self.danmuji.connectServer())
+            task_connect = asyncio.ensure_future(self.danmuji.connectServer())
+            connect_results = await asyncio.gather(task_connect)
+            # print(connect_results)
+            if all(connect_results):
+                pass
+            else:
+                continue
+            task_main = asyncio.ensure_future(self.danmuji.ReceiveMessageLoop())
             task_heartbeat = asyncio.ensure_future(self.danmuji.HeartbeatLoop())
             finished, pending = await asyncio.wait([task_main, task_heartbeat], return_when=asyncio.FIRST_COMPLETED)
             print('# 弹幕姬异常或主动断开，处理完剩余信息后重连')
