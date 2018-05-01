@@ -3,6 +3,7 @@ import bilibiliCilent
 
 
 class Rafflehandler:
+    __slots__ = ('list_activity', 'list_TV', 'list_captain')
     instance = None
 
     def __new__(cls, *args, **kw):
@@ -54,20 +55,28 @@ class Rafflehandler:
                 # print('本批次轮空')
                 await asyncio.sleep(5)
                 
-    def append2list_TV(self, real_roomid):
+    @staticmethod
+    def append2list_TV(real_roomid):
         # print('welcome to appending')
-        self.list_TV.append(real_roomid)
+        Rafflehandler.instance.list_TV.append(real_roomid)
         # print('appended TV')
         return
         
-    def append2list_activity(self, giftId, text1, text2):
+    @staticmethod
+    def append2list_activity(giftId, text1, text2):
         # print('welcome to appending')
-        self.list_activity.append([giftId, text1, text2])
+        Rafflehandler.instance.list_activity.append([giftId, text1, text2])
         # print('appended activity')
         return
         
-    def append2list_captain(self, roomid):
-        self.list_captain.append(roomid)
+    @staticmethod
+    def append2list_captain(roomid):
+        Rafflehandler.instance.list_captain.append(roomid)
         print('appended captain')
         return
+        
+    @staticmethod
+    def getlist():
+        print('目前TV任务队列状况', Rafflehandler.instance.list_TV)
+        print('数目', len(Rafflehandler.instance.list_TV))
          

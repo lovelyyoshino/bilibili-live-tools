@@ -5,8 +5,8 @@ async def run():
     
     while 1:
         # print('lotteryresult test')
-        await Statistics().clean_activity()
-        await Statistics().clean_TV()
+        await Statistics.clean_activity()
+        await Statistics.clean_TV()
         
         # print('自动延迟参数', sleeptime1, sleeptime2)
         await asyncio.sleep(30)

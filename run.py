@@ -17,6 +17,7 @@ from bilitimer import BiliTimer
 
 
 loop = asyncio.get_event_loop()
+queue = asyncio.Queue()
 fileDir = os.path.dirname(os.path.realpath('__file__'))
 file_color = f'{fileDir}/conf/color.conf'
 file_user = f'{fileDir}/conf/user.conf'
@@ -30,34 +31,25 @@ login.login()
 Statistics()
 
 rafflehandler = Rafflehandler()
-biliconsole.Biliconsole()
+biliconsole.Biliconsole(loop, queue)
 
 danmu_connection = connect()
 
 
 bili_timer = BiliTimer()
-OnlineHeart.init()
-Tasks.init()
-Silver.init()
 
 
 console_thread = threading.Thread(target=biliconsole.controler)
 
 console_thread.start()
 
-loop = asyncio.get_event_loop()
 tasks = [
-    # utils.fetch_user_info(),
-    # utils.fetch_bag_list(),
-    # utils.fetch_medal(),
-    
-    # OnlineHeart.run(),
-    # Silver.run(),
-    # Tasks.run(),
+    OnlineHeart.run(),
+    Silver.run(),
     danmu_connection.run(),
     LotteryResult.run(),
     rafflehandler.run(),
-    biliconsole.Biliconsole().run(),
+    biliconsole.Biliconsole.run(),
     bili_timer.run()
     
 ]

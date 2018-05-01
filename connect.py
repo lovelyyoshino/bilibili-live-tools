@@ -7,13 +7,13 @@ from configloader import ConfigLoader
 
 
 class connect():
+    __slots__ = ('danmuji')
     instance = None
     
     def __new__(cls, *args, **kw):
         if not cls.instance:
             cls.instance = super(connect, cls).__new__(cls, *args, **kw)
             cls.instance.danmuji = None
-            cls.instance.tag_reconnect = False
         return cls.instance
         
     async def run(self):
@@ -40,22 +40,16 @@ class connect():
             else:
                 await asyncio.wait(pending)
                 print('# 弹幕心跳模块退出，主程序剩余任务处理完毕')
-            # 类似于lock功能，当reconnect模块使用时，禁止重启，直到reconnect模块修改完毕)
-            while self.tag_reconnect:
-                await asyncio.sleep(0.5)
-                print('pending')
             if time_end - time_start < 5:
                 print('# 当前网络不稳定，为避免频繁不必要尝试，将自动在5秒后重试')
                 await asyncio.sleep(5)
-            
-    def reconnect(self, roomid):
-        self.tag_reconnect = True
-        if self.danmuji is not None:
-            self.danmuji.close_connection()
+    
+    @staticmethod        
+    def reconnect(roomid):
         ConfigLoader().dic_user['other_control']['default_monitor_roomid'] = roomid
         print('已经切换roomid')
-        self.tag_reconnect = False
-        
+        if connect.instance.danmuji is not None:
+            connect.instance.danmuji.close_connection()
         
         
         
