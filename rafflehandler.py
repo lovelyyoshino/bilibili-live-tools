@@ -1,82 +1,45 @@
 import asyncio
-import bilibiliCilent
 
 
 class Rafflehandler:
-    __slots__ = ('list_activity', 'list_TV', 'list_captain')
+    __slots__ = ('queue_raffle',)
     instance = None
 
     def __new__(cls, *args, **kw):
         if not cls.instance:
             cls.instance = super(Rafflehandler, cls).__new__(cls, *args, **kw)
-            cls.instance.list_activity = []
-            cls.instance.list_TV = []
-            cls.instance.list_captain = []
+            cls.instance.queue_raffle = asyncio.Queue()
         return cls.instance
         
     async def run(self):
         while True:
-            len_list_activity = len(self.list_activity)
-            len_list_TV = len(self.list_TV)
-            len_list_captain = len(self.list_captain)
-            
-            # print('准备执行')
-
-            # 过滤相同房间
-            # set_activity = set(self.list_activity)
-            set_activity = []
-            for i in self.list_activity:
-                if i not in set_activity:
-                    set_activity.append(i)
-            set_TV = set(self.list_TV)
-            set_captain = set(self.list_captain)
+            raffle = await self.queue_raffle.get()
+            await asyncio.sleep(3)
+            list_raffle0 = [self.queue_raffle.get_nowait() for i in range(self.queue_raffle.qsize())]
+            list_raffle0.append(raffle)
+            list_raffle = list(set(list_raffle0))
+                
             # print('过滤完毕')
-            # if len(set_activity) != len_list_activity or len(set_TV) != len_list_TV:
-            # print('过滤机制起作用')
+            # if len(list_raffle) != len(list_raffle0):
+                # print('过滤机制起作用')
             
             tasklist = []
-            for i in set_TV:
-                task = asyncio.ensure_future(bilibiliCilent.handle_1_room_TV(i))
+            for i in list_raffle:
+                task = asyncio.ensure_future(i[0](*i[1]))
                 tasklist.append(task)
-            for i in set_activity:
-                task = asyncio.ensure_future(bilibiliCilent.handle_1_room_activity(i[0], i[1], i[2]))
-                tasklist.append(task)
-            for i in set_captain:
-                task = asyncio.ensure_future(bilibiliCilent.handle_1_room_captain(i))
-                tasklist.append(task)
-            if tasklist:
-                await asyncio.wait(tasklist, return_when=asyncio.ALL_COMPLETED)
-                del self.list_activity[:len_list_activity]
-                del self.list_TV[:len_list_TV]
-                del self.list_captain[:len_list_captain]
-                await asyncio.sleep(1)
-                # print('本批次结束')
-            else:
-                # print('本批次轮空')
-                await asyncio.sleep(5)
+            
+            await asyncio.wait(tasklist, return_when=asyncio.ALL_COMPLETED)
+            
                 
     @staticmethod
-    def append2list_TV(real_roomid):
+    def Put2Queue(func, value):
         # print('welcome to appending')
-        Rafflehandler.instance.list_TV.append(real_roomid)
-        # print('appended TV')
+        Rafflehandler.instance.queue_raffle.put_nowait((func, value))
+        # print('appended')
         return
-        
-    @staticmethod
-    def append2list_activity(giftId, text1, text2):
-        # print('welcome to appending')
-        Rafflehandler.instance.list_activity.append([giftId, text1, text2])
-        # print('appended activity')
-        return
-        
-    @staticmethod
-    def append2list_captain(roomid):
-        Rafflehandler.instance.list_captain.append(roomid)
-        print('appended captain')
-        return
-        
+            
     @staticmethod
     def getlist():
-        print('目前TV任务队列状况', Rafflehandler.instance.list_TV)
-        print('数目', len(Rafflehandler.instance.list_TV))
+        print('目前TV任务队列状况', Rafflehandler.instance.queue_raffle.qsize())
          
+
