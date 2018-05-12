@@ -61,10 +61,11 @@ def process_send_gift_web():
     Biliconsole.append2list_console([[True], utils.fetch_bag_list])
     bagid = input('请输入要发送的礼物编号:')
     # print('是谁', giftid)
-    giftnum = input('请输入要发送的礼物数目:')
+    giftnum = int(input('请输入要发送的礼物数目:'))
     roomid = input('请输入要发送的房间号:')
     real_roomid = fetch_real_roomid(roomid)
-    Biliconsole.append2list_console([[real_roomid, [[False, bagid], utils.fetch_bag_list], giftnum, bagid], utils.send_gift_web])
+    # Biliconsole.append2list_console([[real_roomid, [[False, bagid], utils.fetch_bag_list], giftnum, bagid], utils.send_gift_web])
+    Biliconsole.append2list_console([[real_roomid, giftnum, bagid], utils.send_gift_web])
     
     
 def preprocess_change_danmuji_roomid():
@@ -99,6 +100,11 @@ def process_watch_living_video():
         Biliconsole.append2list_console([[real_roomid], utils.watch_living_video])
         return
     print('仅支持ios')
+    
+def InputGiveCoin2Av():
+    video_id = input('请输入av号')
+    num = input('输入数目')
+    Biliconsole.append2list_console([[int(video_id), int(num)], utils.GiveCoin2Av])
 
 options = {
     '1': Statistics.getlist,
@@ -107,7 +113,7 @@ options = {
     '4': utils.fetch_medal,  # async
     '5': utils.fetch_user_info,  # async
     '6': utils.check_taskinfo,  # async
-    '7': preprocess_send_danmu_msg_andriod,  # input async
+    '7': preprocess_send_danmu_msg_web,  # input async
     '8': preprocess_send_danmu_msg_web,  # input async
     '9': preprocess_check_room,  # input async
     '10': process_send_gift_web,  # input async !!!
@@ -121,6 +127,7 @@ options = {
     '18': BiliTimer.getresult,
     '19': Rafflehandler.getlist,
     '20': Statistics.checklist,
+    '21': InputGiveCoin2Av,
     'help': guide_of_console,
     'h': guide_of_console
 }

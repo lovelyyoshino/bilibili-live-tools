@@ -2,18 +2,10 @@
 # bilibili-live-tools
 
 
-项目又经过了一天的重构。差不多能当python课设交上去了(´；ω；`)
+yjqiang分支是一个次分支，特别感谢主分支所有参与者的基础奠定
 
-学业繁忙，准备弃坑咕咕咕(flag)，风暴初版已上传，不再更新后几版
+docker使用 https://github.com/Muromi-Rikka/bilibili-live-tools-docker
 
-//时隔多日打算学一下图形化，说不定会以这个项目作为样本(flag)
-
-
-开放识别登录验证码接口:
-
-        POST API:http://101.236.6.31:8080/code
-        data = {"image":base64.b64decode(response.content)}
-        1g1h1m学生机，慢点请求......
 
 目前已完成：
 ------
@@ -34,6 +26,7 @@
         根据亲密度赠送礼物
         银瓜子硬币双向兑换
         云端验证码识别
+        主站每日任务（4个）
 
 version 1.0.0
     基本稳定
@@ -45,6 +38,9 @@ version 1.1.0
       结构方面的调整，一些不必要的对象创建被删除
       简单调整代码style
       其他细节的改变
+
+version 2.0
+      改了一堆。。。忘了，反正一堆
          
       
         
@@ -55,7 +51,6 @@ version 1.1.0
         python3.6
   
     
-修bug群:473195880
 
 
 感谢:https://github.com/lyyyuna

@@ -3,3 +3,4 @@ rsa
 aiohttp
 webcolors
 Pillow
+toml

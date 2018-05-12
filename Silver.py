@@ -35,6 +35,9 @@ async def run():
             await asyncio.sleep(sleeptime)
         elif not json_rsp['code']:
             Printer().printlist_append(['join_lottery', '', 'user', "# 打开了宝箱"])
+        elif json_rsp['code'] == 400:
+            print('小黑屋, 6小时后重试')
+            await asyncio.sleep(21600)
         else:
             Printer().printlist_append(['join_lottery', '', 'user',"# 继续等待宝箱冷却..."])
             # 未来如果取消了这个东西就睡眠185s，否则精确睡眠

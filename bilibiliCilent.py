@@ -76,14 +76,21 @@ async def handle_1_room_TV(real_roomid):
         # print(True)
         await bilibili.post_watching_history(real_roomid)
         json_response = await bilibili.get_giftlist_of_TV(real_roomid)
-        checklen = json_response['data']['unjoin']
+        # print(json_response['data']['list'])
+        checklen = json_response['data']['list']
         list_available_raffleid = []
         for j in checklen:
             # await asyncio.sleep(random.uniform(0.5, 1))
-            resttime = j['dtime']
-            raffleid = j['id']
-            if Statistics.check_TVlist(real_roomid, raffleid):
+            # resttime = j['dtime']
+            raffleid = j['raffleId']
+            if j['status'] == 1:
+                # print('未参加')
                 list_available_raffleid.append(raffleid)
+            elif j['status'] == 2:
+                # print('过滤')
+                pass
+            else:
+                print(checklen)
         tasklist = []
         num_available = len(list_available_raffleid)
         for raffleid in list_available_raffleid:
@@ -235,6 +242,16 @@ async def parseDanMu(messages):
             Printer().printlist_append(['join_lottery', '', 'user', f'检测到房间{roomid:^9}开通总督'], True)
             Rafflehandler.Put2Queue(handle_1_room_captain, (roomid,))
             Statistics.append2pushed_captainlist()
+        else:
+            a = re.compile(r"(.*)欢迎(.*)总督(.*)登船")
+            res = re.search(a, dic['msg'])
+            if res is not None:
+                print('请反馈')
+                roomid = ConfigLoader().dic_user['other_control']['default_monitor_roomid']
+                Printer().printlist_append(['join_lottery', '', 'user', f'检测到房间{roomid:^9}开通总督'], True)
+                Rafflehandler.Put2Queue(handle_1_room_captain, (roomid,))
+                Statistics.append2pushed_captainlist()
+            
                                                           
 
 class bilibiliClient():

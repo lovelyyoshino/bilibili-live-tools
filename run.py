@@ -19,9 +19,9 @@ from bilitimer import BiliTimer
 loop = asyncio.get_event_loop()
 queue = asyncio.Queue()
 fileDir = os.path.dirname(os.path.realpath('__file__'))
-file_color = f'{fileDir}/conf/color.conf'
-file_user = f'{fileDir}/conf/user.conf'
-file_bilibili = f'{fileDir}/conf/bilibili.conf'
+file_color = f'{fileDir}/conf/color.toml'
+file_user = f'{fileDir}/conf/user.toml'
+file_bilibili = f'{fileDir}/conf/bilibili.toml'
 ConfigLoader(colorfile=file_color, userfile=file_user, bilibilifile=file_bilibili)
 
 # print('Hello world.')
