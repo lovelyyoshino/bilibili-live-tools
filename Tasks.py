@@ -136,10 +136,10 @@ async def doublegain_coin2silver():
 
 async def sliver2coin():
     if ConfigLoader().dic_user['task_control']['silver2coin']:
-        # -403 done
-        json_response = await bilibili.silver2coin_web()
         # 403 done
         json_response1 = await bilibili.silver2coin_app()
+        # -403 done
+        json_response = await bilibili.silver2coin_web()
         Printer().printlist_append(['join_lottery', '', 'user', "# ", json_response['msg']])
         Printer().printlist_append(['join_lottery', '', 'user', "# ", json_response1['msg']])
         if json_response['code'] == -403 and '只' in json_response['msg']:
@@ -185,7 +185,6 @@ async def GetVideoShareExp(list_topvideo):
 
 async def BiliMainTask():
     try:
-        await utils.GetUesrInfo()
         login, watch_av, num, share_av= await utils.GetRewardInfo()
     except :
         # print('当前网络不好，正在重试，请反馈开发者!!!!')

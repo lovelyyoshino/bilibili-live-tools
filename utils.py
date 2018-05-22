@@ -95,7 +95,6 @@ async def send_danmu_msg_web(msg, roomId):
     print(json_response)
 
 def find_live_user_roomid(wanted_name):
-    print('期望名字', wanted_name)
     for i in range(len(wanted_name), 0, -1):
         response = bilibili.request_search_user(wanted_name[:i])
         results = response.json()['result']
@@ -391,11 +390,6 @@ async def GetVideoCid(video_aid):
         # print(json_rsp[0]['cid'])
         return (json_rsp[0]['cid'])
 
-async def GetUesrInfo():
-    async with aiohttp.ClientSession() as session:
-        json_rsp = await bilibili().ReqMasterInfo(session)
-        print(f'主站等级{json_rsp["level_info"]["current_level"]} {json_rsp["level_info"]["current_exp"]}/{json_rsp["level_info"]["next_exp"]}')
-
 async def GetRewardInfo(show=True):
     async with aiohttp.ClientSession() as session:
         json_rsp = await bilibili().ReqMasterInfo(session)
@@ -403,5 +397,16 @@ async def GetRewardInfo(show=True):
         watch_av = json_rsp['watch_av']
         coins_av = json_rsp['coins_av']
         share_av = json_rsp['share_av']
+        level_info = json_rsp["level_info"]
+        current_exp = level_info['current_exp']
+        next_exp = level_info['next_exp']
+        print(f'# 主站等级值 {level_info["current_level"]}')
+        print(f'# 主站经验值 {level_info["current_exp"]}')
+        print(f'# 主站剩余值 {- current_exp + next_exp}')
+        arrow = int(current_exp * 30 / next_exp)
+        line = 30 - arrow
+        percent = current_exp / next_exp * 100.0
+        process_bar = '# [' + '>' * arrow + '-' * line + ']' + '%.2f' % percent + '%'
+        print(process_bar)
         if show: print(f'每日登陆：{login} 每日观看：{watch_av} 每日投币经验：{coins_av}/50 每日分享：{share_av}')
         return login, watch_av, coins_av, share_av

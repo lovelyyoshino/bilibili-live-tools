@@ -36,7 +36,7 @@ cookie = ""
 username = ""
 password = ""
 
-[dic-giftids_raffle]
+[giftids_raffle]
 117 = "怦然心动"
 116 = "漫天花雨"
 
