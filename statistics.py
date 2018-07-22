@@ -9,7 +9,7 @@ def decimal_time():
 
 
 class Statistics:
-    __slots__ = ('activity_id_list', 'TV_id_list', 'pushed_event', 'pushed_TV', 'pushed_captain', 'joined_event', 'joined_TV', 'joined_captain', 'result')
+    __slots__ = ('activity_id_list', 'TV_id_list', 'result', 'pushed_raffle', 'joined_raffle')
     instance = None
 
     def __new__(cls, *args, **kw):
@@ -19,13 +19,9 @@ class Statistics:
             # cls.instance.activity_time_list = []
             cls.instance.TV_id_list = []
             # cls.instance.TV_time_list = []
-            cls.instance.pushed_event = []
-            cls.instance.pushed_TV = []
-            cls.instance.pushed_captain = []
+            cls.instance.pushed_raffle = {}
             
-            cls.instance.joined_event = []
-            cls.instance.joined_TV = []
-            cls.instance.joined_captain = []
+            cls.instance.joined_raffle = {}
             cls.instance.result = {}
             # cls.instance.TVsleeptime = 185
             # cls.instance.activitysleeptime = 125
@@ -39,15 +35,12 @@ class Statistics:
     @staticmethod
     def getlist():
         inst = Statistics.instance
-        # print(inst.joined_event)
-        # print(inst.joined_TV)
-        print('本次推送活动抽奖次数:', len(inst.pushed_event))
-        print('本次推送电视抽奖次数:', len(inst.pushed_TV))
-        print('本次推送总督抽奖次数:', len(inst.pushed_captain))
+        for k, v in inst.pushed_raffle.items():
+            print(f'本次推送{k}次数: {v}')
+            
         print()
-        print('本次参与活动抽奖次数:', len(inst.joined_event))
-        print('本次参与电视抽奖次数:', len(inst.joined_TV))
-        print('本次参与总督抽奖次数:', len(inst.joined_captain))
+        for k, v in inst.joined_raffle.items():
+            print(f'本次参与{k}次数: {v}')
 
     @staticmethod
     def getresult():
@@ -113,7 +106,7 @@ class Statistics:
                     elif json_response['data']['gift_id'] != '-1':
     
                         data = json_response['data']
-                        print(f'# 房间{inst.TV_id_list[0][0]:^9}小电视道具抽奖结果: {data["gift_name"]}X{data["gift_num"]}')
+                        print(f'# 房间{inst.TV_id_list[0][0]:^9}道具抽奖结果: {data["gift_name"]}X{data["gift_num"]}')
                         inst.add_to_result(data['gift_name'], int(data['gift_num']))
     
                         inst.delete_0st_TVlist()
@@ -136,38 +129,37 @@ class Statistics:
         inst.activity_id_list.append((text1, raffleid))
         # inst.activity_time_list.append(int(time))
         # inst.activity_time_list.append(int(CurrentTime()))
-        inst.joined_event.append(decimal_time())
+        inst.append2joined_raffle('活动(合计)')
         # print("activity加入成功", inst.joined_event)
 
     @staticmethod
     def append_to_TVlist(raffleid, real_roomid, time=''):
         inst = Statistics.instance
-        inst.TV_id_list.append((real_roomid,raffleid))
+        inst.TV_id_list.append((real_roomid, raffleid))
         # inst.TV_time_list.append(int(time)+int(CurrentTime()))
         # inst.TV_time_list.append(int(CurrentTime()))
-        inst.joined_TV.append(decimal_time())
+        inst.append2joined_raffle('小电视(合计)')
         # print("tv加入成功", inst.joined_TV)
         
     @staticmethod
     def append_to_captainlist():
         inst = Statistics.instance
-        inst.joined_captain.append(decimal_time())
+        inst.append2joined_raffle('总督(合计)')
         
     @staticmethod
-    def append2pushed_activitylist():
+    def append2joined_raffle(type, num=1):
         inst = Statistics.instance
-        inst.pushed_event.append(decimal_time())
+        inst.joined_raffle[type] = inst.joined_raffle.get(type, 0) + int(num)
         
     @staticmethod
-    def append2pushed_TVlist():
+    def append2pushed_raffle(type, area_id=0, num=1):
         inst = Statistics.instance
-        inst.pushed_TV.append(decimal_time())
-        
-    @staticmethod
-    def append2pushed_captainlist():
-        inst = Statistics.instance
-        inst.pushed_captain.append(decimal_time())
-
+        if '摩天' in type:
+            inst.pushed_raffle[type] = inst.pushed_raffle.get(type, 0) + int(num)
+        else:
+            if area_id == 1:
+                inst.pushed_raffle[type] = inst.pushed_raffle.get(type, 0) + int(num)
+                    
     @staticmethod
     def check_TVlist(real_roomid, raffleid):
         inst = Statistics.instance

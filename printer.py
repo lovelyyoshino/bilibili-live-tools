@@ -5,6 +5,7 @@ except ImportError:
 import webcolors
 from configloader import ConfigLoader
 import time
+import codecs
 
 
 # "#969696"
@@ -23,10 +24,29 @@ def level(str):
 
 def timestamp(tag_time):
     if tag_time:
-        return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+        str_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
+        print(f'[{str_time}]', end=' ')
+        return str_time
     else:
-        return None
+        # print('    ', end='')
+        pass
 
+
+def info(list_msg, tag_time=False):
+    timestamp(tag_time)
+    for msg in list_msg:
+        print(msg)
+        
+
+def warn(msg):
+    with codecs.open(r'bili.log', 'a', encoding='utf-8') as f:
+        f.write(f'{timestamp(True)} {msg}\n')
+    print(msg)
+
+        
+def error(msg):
+    print(msg)
+    
 
 class Printer():
     instance = None
@@ -47,44 +67,17 @@ class Printer():
             console.set_color()
         else:
             print(''.join(msg))
-              
-    def printlist_append(self, dic, tag_time=False):
-        tag = False
-        dic_printcontrol = self.dic_user['print_control']
-        if dic[0] in dic_printcontrol.keys():
-            if dic_printcontrol[dic[0]] >= level(dic[2]):
-                tag = True
-                if dic[1] in dic_printcontrol.keys():
-                    tag = dic_printcontrol[dic[1]]
-        if tag:
-            if dic[1] == '弹幕':
-                list_msg, list_color = self.print_danmu_msg(dic[3])
-                self.clean_printlist([0, list_msg, list_color])
-                return
-            
-            if isinstance(dic[3], list):
-                self.clean_printlist([timestamp(tag_time), [dic[3]]])
-            else:
-                self.clean_printlist([timestamp(tag_time), dic[3:]])
-            
-    def clean_printlist(self, i):
-        if i[0] == 0:
-            if (self.dic_user['platform']['platform'] == 'ios_pythonista'):
-                self.concole_print(i[1], i[2])
-            else:
-                self.concole_print(i[1])
+             
+    # 弹幕 礼物 。。。。type
+    def print_danmu(self, dic_msg, type='normal'):
+        if not self.dic_user['print_control']['danmu']:
+            return
+        list_msg, list_color = self.print_danmu_msg(dic_msg)
+        if (self.dic_user['platform']['platform'] == 'ios_pythonista'):
+            self.concole_print(list_msg, list_color)
         else:
-            if i[0] is None:
-                pass
-            else:
-                print(''.join(['[', i[0], ']']), end=' ')
-                
-            if isinstance(i[1][0], list):
-                for j in i[1][0]:
-                    print(j)
-            else:
-                print(''.join(i[1]))
-        
+            self.concole_print(list_msg)
+    
     def print_danmu_msg(self, dic):
         info = dic['info']
         # tmp = dic['info'][2][1] + ':' + dic['info'][1]
@@ -115,19 +108,19 @@ class Printer():
                 list_color.append(self.dic_color['user-level']['ul' + str(info[4][0])])
                 list_msg.append('UL' + str(info[4][0]) + ' ')
         try:
-            if info[2][7] != '':
+            if info[2][7]:
                 list_color.append(hex_to_rgb_percent(info[2][7]))
-                list_msg.append(info[2][1])
+                list_msg.append(info[2][1] + ':')
             else:
-                list_msg.append(info[2][1])
-                list_color.append([])
+                list_msg.append(info[2][1] + ':')
+                list_color.append(self.dic_color['others']['default_name'])
             # print(info)
         except:
             print("# 小电视降临本直播间")
-            list_msg.append(info[2][1])
-            list_color.append([])
+            list_msg.append(info[2][1] + ':')
+            list_color.append(self.dic_color['others']['default_name'])
             
-        list_msg.append(':' + info[1])
+        list_msg.append(info[1])
         list_color.append([])
         return list_msg, list_color
             

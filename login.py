@@ -26,9 +26,10 @@ def LoginWithPwd():
     response = bilibili.normal_login(username, password)
     while response.json()['code'] == -105:
         response = bilibili.login_with_captcha(username, password)
-    try:
-        # print(response.json())
-        data = response.json()['data']
+    json_rsp = response.json()
+    # print(json_rsp)
+    if not json_rsp['code'] and not json_rsp['data']['status']:
+        data = json_rsp['data']
         access_key = data['token_info']['access_token']
         refresh_token = data['token_info']['refresh_token']
         cookie = data['cookie_info']['cookies']
@@ -48,11 +49,12 @@ def LoginWithPwd():
         print("[{}] {}".format(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())), '密码登陆成功'))
         return True
         
-    except:
-        print("[{}] 登录失败,错误信息为:{}".format(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())), response.json()['message']))
+    else:
+        print("[{}] 登录失败,错误信息为:{}".format(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())), json_rsp))
         return False
 
-def login():    
+
+def login():
     if ConfigLoader().dic_bilibili['saved-session']['cookie']:
         bilibili.load_session(ConfigLoader().dic_bilibili['saved-session'])
         return HandleExpire()
@@ -71,7 +73,7 @@ def logout():
 def check_token():
     response = bilibili.request_check_token()
     json_response = response.json()
-    if not json_response['code'] and json_response['data'].get('mid', ''):
+    if not json_response['code'] and 'mid' in json_response['data']:
         print('token有效期检查: 仍有效')
         # print(json_response)
         return True
@@ -84,12 +86,21 @@ def RefreshToken():
     response = bilibili.request_refresh_token()
     json_response = response.json()
     # print(json_response)
-    if not json_response['code'] and json_response['data'].get('mid', ''):
+    
+    if not json_response['code'] and 'mid' in json_response['data']['token_info']:
         print('token刷新成功')
+        data = json_response['data']
+        access_key = data['token_info']['access_token']
+        refresh_token = data['token_info']['refresh_token']
+        cookie = data['cookie_info']['cookies']
+        generator_cookie = (f'{i["name"]}={i["value"]}' for i in cookie)
+        cookie_format = ';'.join(generator_cookie)
         dic_saved_session = {
-                'access_key': json_response['data']['access_token'],
-                'refresh_token': json_response['data']['refresh_token']
-                }
+            'csrf': cookie[0]['value'],
+            'access_key': access_key,
+            'refresh_token': refresh_token,
+            'cookie': cookie_format
+            }
         bilibili.load_session(dic_saved_session)
         if ConfigLoader().dic_user['other_control']['keep-login']:
             ConfigLoader().write2bilibili(dic_saved_session)
@@ -97,14 +108,15 @@ def RefreshToken():
         return True
     print('联系作者(token刷新失败，cookie过期)', json_response)
     return False
-    
+
+        
 def HandleExpire():
     if not check_token():
         if not RefreshToken():
             return LoginWithPwd()
         else:
             if not check_token():
-                # print('请联系作者')
+                print('请联系作者!!!!!!!!!')
                 return LoginWithPwd()
     return True
     

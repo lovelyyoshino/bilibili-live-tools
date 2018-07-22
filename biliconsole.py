@@ -71,15 +71,15 @@ def process_send_gift_web():
 def preprocess_change_danmuji_roomid():
     roomid = input('请输入roomid')
     real_roomid = fetch_real_roomid(roomid)
-    Biliconsole.append2list_console([[real_roomid], 'normal', connect.reconnect])
+    Biliconsole.append2list_console([[real_roomid], connect.reconnect])
 
 
 def change_printer_dic_user():
     new_words = input('弹幕控制')
     if new_words == 'T':
-        Printer().dic_user['print_control']['弹幕'] = True
+        Printer().dic_user['print_control']['danmu'] = True
     else:
-        Printer().dic_user['print_control']['弹幕'] = False
+        Printer().dic_user['print_control']['danmu'] = False
         
         
 def preprocess_fetch_liveuser_info():
@@ -100,7 +100,8 @@ def process_watch_living_video():
         Biliconsole.append2list_console([[real_roomid], utils.watch_living_video])
         return
     print('仅支持ios')
-    
+
+        
 def InputGiveCoin2Av():
     video_id = input('请输入av号')
     num = input('输入数目')
