@@ -1,10 +1,8 @@
 import OnlineHeart
 import Silver
-import LotteryResult
 import Tasks
 import connect
 from rafflehandler import Rafflehandler
-from rafflehandler import Delay_Joiner
 import asyncio
 from printer import Printer
 from statistics import Statistics
@@ -13,17 +11,14 @@ from configloader import ConfigLoader
 import threading
 import os
 import login
-import biliconsole
+import bili_console
 from bilitimer import BiliTimer
 
 
 loop = asyncio.get_event_loop()
-queue = asyncio.Queue()
 fileDir = os.path.dirname(os.path.realpath('__file__'))
-file_color = f'{fileDir}/conf/color.toml'
-file_user = f'{fileDir}/conf/user.toml'
-file_bilibili = f'{fileDir}/conf/bilibili.toml'
-ConfigLoader(colorfile=file_color, userfile=file_user, bilibilifile=file_bilibili)
+
+ConfigLoader(fileDir)
 
 # print('Hello world.')
 printer = Printer()
@@ -32,7 +27,7 @@ login.login()
 Statistics()
 
 rafflehandler = Rafflehandler()
-biliconsole.Biliconsole(loop, queue)
+var_console = bili_console.Biliconsole(loop)
 
 list_raffle_connection = [connect.RaffleConnect(i) for i in range(1, 5)]
 list_raffle_connection_task = [i.run() for i in list_raffle_connection]
@@ -40,22 +35,20 @@ list_raffle_connection_task = [i.run() for i in list_raffle_connection]
 danmu_connection = connect.connect()
 
 
-bili_timer = BiliTimer()
-delay_timer = Delay_Joiner()
+bili_timer = BiliTimer(loop)
 
-console_thread = threading.Thread(target=biliconsole.controler)
+console_thread = threading.Thread(target=var_console.cmdloop)
 
 console_thread.start()
 
+Tasks.init()
 tasks = [
     OnlineHeart.run(),
     Silver.run(),
     danmu_connection.run(),
-    # LotteryResult.run(),
     rafflehandler.run(),
-    biliconsole.Biliconsole.run(),
-    bili_timer.run(),
-    delay_timer.run()
+    # var_console.run(),
+    # bili_timer.run(),
     
 ]
 try:

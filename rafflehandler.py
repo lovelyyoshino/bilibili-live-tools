@@ -3,47 +3,16 @@ from statistics import Statistics
 import printer
 import utils
 import asyncio
-import datetime
 import time
 import random
+from bilitimer import BiliTimer
 
 
 def CurrentTime():
-    currenttime = int(time.mktime(datetime.datetime.now().timetuple()))
+    currenttime = int(time.time())
     return currenttime
 
 
-class Delay_Joiner:
-    __slots__ = ('jobs',)
-    instance = None
-
-    def __new__(cls, *args, **kw):
-        if not cls.instance:
-            cls.instance = super(Delay_Joiner, cls).__new__(cls, *args, **kw)
-            cls.instance.jobs = asyncio.PriorityQueue()
-        return cls.instance
-        
-    async def run(self):
-        while True:
-            i = await self.jobs.get()
-            # print(i)
-            currenttime = CurrentTime()
-            sleeptime = i[0] - currenttime
-            # print('智能睡眠', sleeptime)
-            await asyncio.sleep(max(sleeptime, 0))
-            await i[2](*i[3])
-      
-    @staticmethod
-    async def append2list_jobs(func, time_expected, tuple_values):
-        await Delay_Joiner.instance.jobs.put((time_expected, func.__name__, func, tuple_values))
-        # print('添加任务', time_expected, func.__name__, func, tuple_values)
-        return
-        
-    @staticmethod
-    def getresult():
-        print('数目', Delay_Joiner.instance.jobs.qsize())
-        
-        
 class Rafflehandler:
     __slots__ = ('queue_raffle', 'list_raffle_id')
     instance = None
@@ -95,7 +64,10 @@ class Rafflehandler:
         
     def add2raffle_id(self, raffle_id):
         self.list_raffle_id.append(raffle_id)
-        print(self.list_raffle_id)
+        if len(self.list_raffle_id) > 150:
+            # print(self.list_raffle_id)
+            del self.list_raffle_id[:75]
+            # print(self.list_raffle_id)
     
     def check_duplicate(self, raffle_id):
         return (raffle_id in self.list_raffle_id)
@@ -111,9 +83,9 @@ async def handle_1_TV_raffle(num, real_roomid, raffleid, raffle_type):
             return True
         elif code == -405:
             print('没抢到。。。。。')
-            printer.warn(raffleid)
+            printer.warn(f'{raffleid}  {raffle_type} {num}')
             return False
-        elif code == 400: 
+        elif code == 400:
             print(json_response2)
             return
             tasklist = []
@@ -144,6 +116,10 @@ async def handle_1_captain_raffle(num, roomid, raffleid):
     else:
         print(json_response2)
     return True
+    
+async def handle_1_storm_raffle(id):
+    json_response1 = await bilibili.get_gift_of_storm(id)
+    print(json_response1)
  
                                        
 async def handle_1_activity_raffle(num, text1, raffleid):
@@ -200,7 +176,19 @@ async def handle_1_room_TV(real_roomid):
         num_available = len(list_available_raffleid)
         # print(list_available_raffleid)
         for raffle_id, raffle_type, time_wanted in list_available_raffleid:
-            await Delay_Joiner.append2list_jobs(handle_1_TV_raffle, time_wanted, (num_available, real_roomid, raffle_id, raffle_type))
+            BiliTimer.append2list_jobs(handle_1_TV_raffle, time_wanted, (num_available, real_roomid, raffle_id, raffle_type))
+            
+async def handle_1_room_storm(roomid):
+    result = await utils.enter_room(roomid)
+    if result:
+        temp = await bilibili.get_giftlist_of_storm(roomid)
+        check = len(temp['data'])
+        list_available_raffleid = []
+        if check != 0 and temp['data']['hasJoin'] != 1:
+            id = temp['data']['id']
+            list_available_raffleid.append((id, 0))
+        for id, time_wanted in list_available_raffleid:
+            BiliTimer.append2list_jobs(handle_1_storm_raffle, time_wanted, (id,))
 
 async def handle_1_room_activity(text1):
     result = await utils.enter_room(text1)

@@ -4,13 +4,16 @@
 
 yjqiang分支是一个次分支，特别感谢主分支所有参与者的基础奠定
 
-docker使用 https://github.com/Muromi-Rikka/bilibili-live-tools-docker
+docker使用 https://github.com/Muromi-Rikka/bilibili-live-tools-docker  
+docker使用  https://github.com/zsnmwy/bilibili-live-tools-docker
 
 pythonista3(ios) https://www.jianshu.com/p/669e63b5ec2b
 
 依赖包 https://github.com/yjqiang/bilibili-live-tools/blob/master/requirements.txt  
+运行方法  run.py
 
-多用户版本 https://github.com/yjqiang/bili2.0
+多用户版本 https://github.com/yjqiang/bili2.0  
+二次开发 https://github.com/Hsury/Bilibili-Toolkit  
 
 目前已完成：
 ------
@@ -61,13 +64,28 @@ version 2.1
       更新api
       v4小电视更新
       支持风纪委员会
-      其他修改
+      其他修改  
+
+version 2.2
+------
+      更新wiki  
+      调整bilitimer,改善漏抽问题  
+      弹幕重连机制修复  
+      实物抽奖机制优化  
+
+version 3.0  
+------
+      庆祝多用户发布  
+      风纪委基本100%成功率
+    
+      
+
         
 
 
 环境:
 ------  
-        python3.6
+        python3.6+
   
     
 
@@ -76,7 +94,9 @@ version 2.1
 
 感谢:https://github.com/lkeme/BiliHelper
 
-感谢:https://github.com/czp3009/bilibili-api
+感谢:https://github.com/czp3009/bilibili-api  
+
+感谢:https://github.com/lzghzr/bilive_client
 
 
 本项目采用MIT开源协议

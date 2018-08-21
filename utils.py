@@ -7,6 +7,7 @@ from io import BytesIO
 import webbrowser
 import re
 from operator import itemgetter
+from configloader import ConfigLoader
 
 
 def adjust_for_chinese(str):
@@ -26,7 +27,7 @@ def adjust_for_chinese(str):
 
 
 def CurrentTime():
-    currenttime = int(time.mktime(datetime.datetime.now().timetuple()))
+    currenttime = int(time.time())
     return str(currenttime)
 
 
@@ -53,6 +54,7 @@ async def WearingMedalInfo():
 
 async def TitleInfo():
     json_response = await bilibili.ReqTitleInfo()
+    dic_title = ConfigLoader().dic_title
     # print(json_response)
     if not json_response['code']:
         data = json_response['data']
@@ -61,33 +63,27 @@ async def TitleInfo():
                 max = i['level'][1]
             else:
                 max = '-'
-            print(i['activity'], i['score'], max)
+            print(dic_title[i['title_pic']['id']], i['activity'], i['score'], max)
 
-async def fetch_medal(show=True, list_wanted_medal=[]):
+async def fetch_medal(show=True, list_wanted_medal=None):
     printlist = []
     list_medal = []
     if show:
         printlist.append('查询勋章信息')
         printlist.append(
-            '{} {} {:^12} {:^10} {} {:^6} '.format(adjust_for_chinese('勋章'), adjust_for_chinese('主播昵称'), '亲密度',
-                                                   '今日的亲密度', adjust_for_chinese('排名'), '勋章状态'))
+            '{} {} {:^12} {:^10} {} {:^6} {}'.format(adjust_for_chinese('勋章'), adjust_for_chinese('主播昵称'), '亲密度', '今日的亲密度', adjust_for_chinese('排名'), '勋章状态', '房间号码'))
     dic_worn = {'1': '正在佩戴', '0': '待机状态'}
     json_response = await bilibili.request_fetchmedal()
     # print(json_response)
     if not json_response['code']:
         for i in json_response['data']['fansMedalList']:
-            list_medal.append((i['roomid'], int(i['dayLimit']) - int(i['todayFeed']), i['medal_name'], i['level']))
-            if show:
-                printlist.append(
-                    '{} {} {:^14} {:^14} {} {:^6} '.format(adjust_for_chinese(i['medal_name'] + '|' + str(i['level'])),
-                                                           adjust_for_chinese(i['anchorInfo']['uname']),
-                                                           str(i['intimacy']) + '/' + str(i['next_intimacy']),
-                                                           str(i['todayFeed']) + '/' + str(i['dayLimit']),
-                                                           adjust_for_chinese(str(i['rank'])),
-                                                           dic_worn[str(i['status'])]))
+            if 'roomid' in i:
+                list_medal.append((i['roomid'], int(i['dayLimit']) - int(i['todayFeed']), i['medal_name'], i['level']))
+                if show:
+                    printlist.append('{} {} {:^14} {:^14} {} {:^6} {:^9}'.format(adjust_for_chinese(i['medal_name'] + '|' + str(i['level'])), adjust_for_chinese(i['anchorInfo']['uname']), str(i['intimacy']) + '/' + str(i['next_intimacy']), str(i['todayFeed']) + '/' + str(i['dayLimit']), adjust_for_chinese(str(i['rank'])), dic_worn[str(i['status'])], i['roomid']))
         if show:
             printer.info(printlist, True)
-        if list_wanted_medal:
+        if list_wanted_medal is not None:
             list_return_medal = []
             for roomid in list_wanted_medal:
                 for i in list_medal:
@@ -104,61 +100,51 @@ async def send_danmu_msg_web(msg, roomId):
 
 async def find_live_user_roomid(wanted_name):
     print(wanted_name)
-    for i in range(len(wanted_name), 0, -1):
-        json_rsp = await bilibili.request_search_biliuser(wanted_name[:i])
+    
+    def check_name_piece(json_rsp, wanted_name):
         results = json_rsp['result']
         if results is None:
             # print('屏蔽全名')
-            continue
+            return None
         for i in results:
             real_name = re.sub(r'<[^>]*>', '', i['uname'])
             # print('去除干扰', real_name)
             if real_name == wanted_name:
-                print('找到结果', i['room_id'])
-                return i['room_id']
+                print('找到结果', i)
+                return i
+        return None
+                
+    for i in range(len(wanted_name), 0, -1):
+        name_piece = wanted_name[:i]
+        json_rsp = await bilibili.request_search_biliuser(name_piece)
+        answer = check_name_piece(json_rsp, wanted_name)
+        if answer is not None:
+            return answer['room_id']
         # print('结束一次')
 
     print('第2备份启用')
     for i in range(len(wanted_name)):
-        json_rsp = await bilibili.request_search_biliuser(wanted_name[i:])
-        results = json_rsp['result']
-        if results is None:
-            # print('屏蔽全名')
-            continue
-        for i in results:
-            real_name = re.sub(r'<[^>]*>', '', i['uname'])
-            # print('去除干扰', real_name)
-            if real_name == wanted_name:
-                print('找到结果', i['room_id'])
-                return i['room_id']
+        name_piece = wanted_name[i:]
+        json_rsp = await bilibili.request_search_biliuser(name_piece)
+        answer = check_name_piece(json_rsp, wanted_name)
+        if answer is not None:
+            return answer['room_id']
 
     print('第3备份启用')
     for i in range(len(wanted_name), 0, -1):
-        json_rsp = await bilibili.request_search_liveuser(wanted_name[:i])
-        results = json_rsp['result']
-        if results is None:
-            # print('屏蔽全名')
-            continue
-        for i in results:
-            real_name = re.sub(r'<[^>]*>', '', i['uname'])
-            # print('去除干扰', real_name)
-            if real_name == wanted_name:
-                print('找到结果', i['roomid'])
-                return i['roomid']
+        name_piece = wanted_name[:i]
+        json_rsp = await bilibili.request_search_liveuser(name_piece)
+        answer = check_name_piece(json_rsp, wanted_name)
+        if answer is not None:
+            return answer['roomid']
 
     print('第4备份启用')
     for i in range(len(wanted_name)):
-        json_rsp = await bilibili.request_search_liveuser(wanted_name[i:])
-        results = json_rsp['result']
-        if results is None:
-            # print('屏蔽全名')
-            continue
-        for i in results:
-            real_name = re.sub(r'<[^>]*>', '', i['uname'])
-            # print('去除干扰', real_name)
-            if real_name == wanted_name:
-                print('找到结果', i['roomid'])
-                return i['roomid']
+        name_piece = wanted_name[i:]
+        json_rsp = await bilibili.request_search_liveuser(name_piece)
+        answer = check_name_piece(json_rsp, wanted_name)
+        if answer is not None:
+            return answer['roomid']
 
 
 async def fetch_capsule_info():
@@ -466,7 +452,8 @@ async def GetRewardInfo(show=True):
     percent = current_exp / next_exp * 100.0
     process_bar = '# [' + '>' * arrow + '-' * line + ']' + '%.2f' % percent + '%'
     print(process_bar)
-    if show: print(f'每日登陆：{login} 每日观看：{watch_av} 每日投币经验：{coins_av}/50 每日分享：{share_av}')
+    if show:
+        print(f'每日登陆：{login} 每日观看：{watch_av} 每日投币经验：{coins_av}/50 每日分享：{share_av}')
     return login, watch_av, coins_av, share_av
     
         

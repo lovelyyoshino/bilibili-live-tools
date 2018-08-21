@@ -1,5 +1,4 @@
 import datetime
-from bilibili import bilibili
 
 
 # 13:30  --->  13.5
@@ -48,80 +47,6 @@ class Statistics:
         print('本次参与抽奖结果为：')
         for k, v in inst.result.items():
             print(f'{k}X{v}')
-
-    def delete_0st_activitylist(self):
-        del self.activity_id_list[0]
-        # del self.activity_time_list[0]
-
-    def delete_0st_TVlist(self):
-        del self.TV_id_list[0]
-        # del inst.TV_time_list[0]
-
-    @staticmethod
-    async def clean_activity():
-        inst = Statistics.instance
-        # print(inst.id_list)
-        if inst.activity_id_list:
-            for i in range(0, len(inst.activity_id_list)):
-                json_response = await bilibili.get_activity_result(*inst.activity_id_list[0])
-                # print(json_response)
-                try:
-                    if not json_response['code']:
-                        data = json_response['data']
-                        print(f'# 房间{inst.activity_id_list[0][0]:^9}网页端活动抽奖结果: {data["gift_name"]}X{data["gift_num"]}')
-                        inst.add_to_result(data['gift_name'], int(data['gift_num']))
-    
-                        inst.delete_0st_activitylist()
-                    # {'code': -400, 'msg': '尚未开奖，请耐心等待！', 'message': '尚未开奖，请耐心等待！', 'data': []}
-                    elif json_response['code'] == -400:
-                        # sleepseconds = inst.activitysleeptime + inst.activity_time_list[0] - int(CurrentTime())+ 2
-                        # sleepseconds = inst.activity_time_list[0] - int(CurrentTime())
-                        # return sleepsecondsq
-                        return
-    
-                    else:
-                        print('未知情况')
-                        print(json_response)
-                except:
-                    print(json_response)
-
-        else:
-            return
-
-    @staticmethod
-    async def clean_TV():
-        inst = Statistics.instance
-        # print(inst.TV_id_list)
-        if inst.TV_id_list:
-            for i in range(0, len(inst.TV_id_list)):
-
-                json_response = await  bilibili.get_TV_result(*inst.TV_id_list[0])
-                # if response.json()['data']['gift_name'] != "":
-                # print(json_response)
-                try:
-                    # {'code': 0, 'msg': '正在抽奖中..', 'message': '正在抽奖中..', 'data': {'gift_id': '-1', 'gift_name': '', 'gift_num': 0, 'gift_from': '', 'gift_type': 0, 'gift_content': '', 'status': 3}}
-
-                    if json_response['data']['gift_id'] == '-1':
-                        return
-                    elif json_response['data']['gift_id'] != '-1':
-    
-                        data = json_response['data']
-                        print(f'# 房间{inst.TV_id_list[0][0]:^9}道具抽奖结果: {data["gift_name"]}X{data["gift_num"]}')
-                        inst.add_to_result(data['gift_name'], int(data['gift_num']))
-    
-                        inst.delete_0st_TVlist()
-                except:
-                    print(json_response)
-            # else:
-            # print(int(CurrentTime()))
-            # sleepseconds = inst.TV_time_list[0] - int(CurrentTime()) + 1
-            # sleepseconds = inst.TV_time_list[0] - int(CurrentTime())
-            # return
-
-            #  else:
-            # print('未知')
-        else:
-            return
 
     @staticmethod
     def append_to_activitylist(raffleid, text1, time=''):

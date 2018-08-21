@@ -1,17 +1,17 @@
 from bilibili import bilibili
 import time
-import datetime
 import asyncio
 import printer
 import login
 
 
 def CurrentTime():
-    currenttime = int(time.mktime(datetime.datetime.now().timetuple()))
+    currenttime = int(time.time())
     return currenttime
 
 
 async def heartbeat():
+    printer.info(["心跳"], True)
     json_response = await bilibili.apppost_heartbeat()
     json_response = await bilibili.pcpost_heartbeat()
     json_response = await bilibili.heart_gift()
@@ -20,9 +20,26 @@ async def heartbeat():
 
 # 因为休眠时间差不多,所以放到这里,此为实验性功能
 async def draw_lottery():
-    for i in range(87, 95):
+    blacklist = ['test', 'TEST', '测试', '加密']
+    max = 10000
+    min = 50
+    while max > min:
+        # print(min, max)
+        middle = int((min + max + 1) / 2)
+        code_middle = (await bilibili.get_lotterylist(middle))['code']
+        if code_middle:
+            code_middle1 = (await bilibili.get_lotterylist(middle + 1))['code']
+            code_middle2 = (await bilibili.get_lotterylist(middle + 2))['code']
+            if code_middle1 and code_middle2:
+                max = middle - 1
+            else:
+                min = middle + 1
+        else:
+            min = middle
+    print('最新实物抽奖id为', min, max)
+    for i in range(max - 30, max + 1):
         json_response = await bilibili.get_lotterylist(i)
-        blacklist = ['test', 'TEST', '测试', '加密']
+        print('id对应code数值为', json_response['code'], i)
         # -400 不存在
         if not json_response['code']:
             temp = json_response['data']['title']
@@ -37,20 +54,14 @@ async def draw_lottery():
                     ts = CurrentTime()
                     if int(join_end_time) > int(ts) > int(join_start_time):
                         json_response1 = await bilibili.get_gift_of_lottery(i, g)
-                        print("当前时间:", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-                        print("参与实物抽奖回显：", json_response1)
-                    else:
-                        pass
-        else:
-            break
-
+                        printer.info([f'参与实物抽奖回显：{json_response1}'], True)
+        
         
 async def run():
     while 1:
-        printer.info(["心跳"], True)
         login.HandleExpire()
         await heartbeat()
-        await draw_lottery()
+        # await draw_lottery()
         await asyncio.sleep(300)
 
 

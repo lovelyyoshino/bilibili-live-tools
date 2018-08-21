@@ -15,7 +15,7 @@ async def Daily_bag():
     printer.warn(json_response)
     for i in json_response['data']['bag_list']:
         printer.info(["# 获得-" + i['bag_name'] + "-成功"])
-    await BiliTimer.append2list_jobs(Daily_bag, 21600)
+    BiliTimer.call_after(Daily_bag, 21600)
 
 
 # 签到功能
@@ -28,7 +28,7 @@ async def DoSign():
         sleeptime = (utils.seconds_until_tomorrow() + 300)
     else:
         sleeptime = 350
-    await BiliTimer.append2list_jobs(DoSign, sleeptime)
+    BiliTimer.call_after(DoSign, sleeptime)
 
 # 领取每日任务奖励
 async def Daily_Task():
@@ -40,7 +40,7 @@ async def Daily_Task():
         sleeptime = (utils.seconds_until_tomorrow() + 300)
     else:
         sleeptime = 350
-    await BiliTimer.append2list_jobs(Daily_Task, sleeptime)
+    BiliTimer.call_after(Daily_Task, sleeptime)
 
 async def Sign1Group(i1, i2):
     json_response = await bilibili.assign_group(i1, i2)
@@ -59,14 +59,11 @@ async def link_sign():
     list_check = json_rsp['data']['list']
     id_list = ((i['group_id'], i['owner_uid']) for i in list_check)
     if list_check:
-        tasklist = []
         for (i1, i2) in id_list:
-            task = asyncio.ensure_future(Sign1Group(i1, i2))
-            tasklist.append(task)
-        results = await asyncio.gather(*tasklist)
-    await BiliTimer.append2list_jobs(link_sign, 21600)
+            asyncio.ensure_future(Sign1Group(i1, i2))
+    BiliTimer.call_after(link_sign, 21600)
 
-async def send_gift():
+async def send_expiring_gift():
     if ConfigLoader().dic_user['task_control']['clean-expiring-gift']:
         argvs = await utils.fetch_bag_list(show=False)
         printer.warn(argvs)
@@ -78,7 +75,9 @@ async def send_gift():
             if left_time is not None and 0 < int(left_time) < time_set:  # 剩余时间少于半天时自动送礼
                 list_gift.append(i[:3])
         if list_gift:
-            print('发现即将过期的礼物')
+            print('发现即将过期的礼物', list_gift)
+            if(len(list_gift) > 5):
+                printer.warn(f'过期礼物{list_gift}')
             if ConfigLoader().dic_user['task_control']['clean_expiring_gift2all_medal']:
                 print('正在投递其他勋章')
                 list_medal = await utils.fetch_medal(show=False)
@@ -92,20 +91,16 @@ async def send_gift():
                 await utils.send_gift_web(roomID, giftNum, bagID, giftID)
         else:
             print('未发现即将过期的礼物')
-    await BiliTimer.append2list_jobs(send_gift, 21600)
 
-async def auto_send_gift():
-    # await utils.WearingMedalInfo()
-    # return
+async def send_medal_gift():
     list_medal = []
     if ConfigLoader().dic_user['task_control']['send2wearing-medal']:
         list_medal = await utils.WearingMedalInfo()
         if not list_medal:
             print('暂未佩戴任何勋章')
-            # await BiliTimer.append2list_jobs(auto_send_gift, 21600)
     if ConfigLoader().dic_user['task_control']['send2medal']:
         list_medal += await utils.fetch_medal(False, ConfigLoader().dic_user['task_control']['send2medal'])
-    # print(list_medal)    
+    # print(list_medal)
     print('正在投递勋章')
     temp = await utils.fetch_bag_list(show=False)
     # print(temp)
@@ -116,9 +111,11 @@ async def auto_send_gift():
         if (gift_id not in [4, 3, 9, 10]) and left_time is not None:
             list_gift.append(i[:3])
     await full_intimate(list_gift, list_medal)
-            
-    # printer.info(["# 自动送礼共送出亲密度为%s的礼物" % int(calculate)])
-    await BiliTimer.append2list_jobs(auto_send_gift, 21600)
+
+async def send_gift():
+    await send_expiring_gift()
+    await send_medal_gift()
+    BiliTimer.call_after(send_gift, 21600)
 
 async def full_intimate(list_gift, list_medal):
     json_res = await bilibili.gift_list()
@@ -150,34 +147,30 @@ async def doublegain_coin2silver():
         json_response0 = await bilibili.request_doublegain_coin2silver()
         json_response1 = await bilibili.request_doublegain_coin2silver()
         print(json_response0['msg'], json_response1['msg'])
-    await BiliTimer.append2list_jobs(doublegain_coin2silver, 21600)
+    BiliTimer.call_after(doublegain_coin2silver, 21600)
 
 async def sliver2coin():
     if ConfigLoader().dic_user['task_control']['silver2coin']:
         # 403 done
-        json_response1 = await bilibili.silver2coin_app()
-        # -403 done
+        # json_response1 = await bilibili.silver2coin_app()
+        
         json_response = await bilibili.silver2coin_web()
         printer.info([f'#  {json_response["msg"]}'])
-        printer.info([f'#  {json_response1["msg"]}'])
-        if json_response['code'] == -403 and '只' in json_response['msg']:
+        
+        if json_response['code'] == 403 and '最多' in json_response['msg']:
             finish_web = True
         else:
             finish_web = False
 
-        if json_response1['code'] == 403 and '最多' in json_response1['msg']:
-            finish_app = True
-        else:
-            finish_app = False
-        if finish_app and finish_web:
+        if finish_web:
             sleeptime = (utils.seconds_until_tomorrow() + 300)
-            await BiliTimer.append2list_jobs(sliver2coin, sleeptime)
+            BiliTimer.call_after(sliver2coin, sleeptime)
             return
         else:
-            await BiliTimer.append2list_jobs(sliver2coin, 350)
+            BiliTimer.call_after(sliver2coin, 350)
             return
 
-    await BiliTimer.append2list_jobs(sliver2coin, 21600)
+    BiliTimer.call_after(sliver2coin, 21600)
 
 async def GetVideoExp(list_topvideo):
     print('开始获取视频观看经验')
@@ -214,7 +207,7 @@ async def BiliMainTask():
     if not share_av:
         await GetVideoShareExp(list_topvideo)
     # b站傻逼有记录延迟，3点左右成功率高一点
-    await BiliTimer.append2list_jobs(BiliMainTask, utils.seconds_until_tomorrow() + 10800)
+    BiliTimer.call_after(BiliMainTask, utils.seconds_until_tomorrow() + 10800)
 
 
 async def check(id):
@@ -223,7 +216,7 @@ async def check(id):
     # 4 删除 votedelete
     # 1 封杀 votebreak
     text_rsp = await bilibili().req_check_voted(id)
-    # print(response.text)
+    # print(text_rsp)
         
     pattern = re.compile(r'\((.+)\)')
     match = pattern.findall(text_rsp)
@@ -234,6 +227,7 @@ async def check(id):
     votebreak = data['voteBreak']
     voteDelete = data['voteDelete']
     voteRule = data['voteRule']
+    status = data['status']
     voted = votebreak+voteDelete+voteRule
     if voted:
         percent = voteRule / voted
@@ -241,12 +235,14 @@ async def check(id):
         percent = 0
     print('目前已投票', voted)
     print('认为不违反规定的比例', percent)
-    vote = 3
-    if voted >= 400:
-        if percent >= 0.8:
+    vote = None
+    if voted >= 300:
+        if percent >= 0.75:
             vote = 2
-        elif percent <= 0.2:
+        elif percent <= 0.25:
             vote = 4
+        elif 0.4 <= percent <= 0.6:
+            vote = 2
     elif voted >= 150:
         if percent >= 0.9:
             vote = 2
@@ -257,7 +253,11 @@ async def check(id):
             vote = 2
         elif percent <= 0.03:
             vote = 4
-    return vote
+    # 抬一手
+    if vote is None and voted >= 400:
+        vote = 2
+        
+    return vote, status, voted
  
                
 async def judge():
@@ -271,30 +271,44 @@ async def judge():
             print('本次未获取到案件')
             # await asyncio.sleep(1)
             break
-        vote = await check(id)
-        print('投票决策', id, vote)
-        json_rsp = await bilibili().req_vote_case(id, vote)
-        print(json_rsp)
         num_case += 1
-        if vote != 3:
-            num_voted += 1
+        while True:
+            vote, status, voted = await check(id)
+            if vote is None and status == 1:
+                if voted < 300:
+                    printer.info([f'本次获取到的案件{id}暂时无法判定，在180s后重新尝试'], True)
+                    await asyncio.sleep(180)
+                else:
+                    printer.info([f'本次获取到的案件{id}暂时无法判定，在60s后重新尝试'], True)
+                    await asyncio.sleep(60)
+            else:
+                break
+        if status != 1:
+            print('超时失败，请联系作者')
+        else:
+            print('投票决策', id, vote)
+            json_rsp = await bilibili().req_vote_case(id, vote)
+            if not json_rsp['code']:
+                print(f'投票{id}成功')
+                num_voted += 1
+            else:
+                print(f'投票{id}失败，请反馈作者')
         
         print('______________________________')
         # await asyncio.sleep(1)
     
     printer.info([f'风纪委员会共获取{num_case}件案例，其中有效投票{num_voted}件'], True)
-    await BiliTimer.append2list_jobs(judge, 3600)
+    BiliTimer.call_after(judge, 3600)
         
 
-async def init():
-    await BiliTimer.append2list_jobs(sliver2coin, 0)
-    await BiliTimer.append2list_jobs(doublegain_coin2silver, 0)
-    await BiliTimer.append2list_jobs(DoSign, 0)
-    await BiliTimer.append2list_jobs(Daily_bag, 0)
-    await BiliTimer.append2list_jobs(Daily_Task, 0)
-    await BiliTimer.append2list_jobs(link_sign, 0)
-    await BiliTimer.append2list_jobs(send_gift, 0)
-    await BiliTimer.append2list_jobs(auto_send_gift, 0)
-    await BiliTimer.append2list_jobs(BiliMainTask, 0)
-    await BiliTimer.append2list_jobs(judge, 0)
+def init():
+    BiliTimer.call_after(sliver2coin, 0)
+    BiliTimer.call_after(doublegain_coin2silver, 0)
+    BiliTimer.call_after(DoSign, 0)
+    BiliTimer.call_after(Daily_bag, 0)
+    BiliTimer.call_after(Daily_Task, 0)
+    BiliTimer.call_after(link_sign, 0)
+    BiliTimer.call_after(send_gift, 0)
+    BiliTimer.call_after(BiliMainTask, 0)
+    BiliTimer.call_after(judge, 0)
     

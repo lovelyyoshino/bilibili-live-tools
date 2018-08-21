@@ -4,4 +4,3 @@ aiohttp
 webcolors
 Pillow
 toml
-websockets

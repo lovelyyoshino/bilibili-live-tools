@@ -13,13 +13,6 @@ def hex_to_rgb_percent(hex_str):
     color = webcolors.hex_to_rgb_percent(hex_str)
     # print([float(i.strip('%'))/100.0 for i in color])
     return [float(i.strip('%'))/100.0 for i in color]
- 
-
-def level(str):
-    if str == "user":
-        return 0
-    if str == "debug":
-        return 1
 
 
 def timestamp(tag_time):
@@ -27,9 +20,6 @@ def timestamp(tag_time):
         str_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
         print(f'[{str_time}]', end=' ')
         return str_time
-    else:
-        # print('    ', end='')
-        pass
 
 
 def info(list_msg, tag_time=False):
@@ -46,6 +36,11 @@ def warn(msg):
         
 def error(msg):
     print(msg)
+
+        
+def debug(msg):
+    if ConfigLoader().dic_user['print_control']['debug']:
+        info([msg], True)
     
 
 class Printer():
@@ -56,28 +51,30 @@ class Printer():
             cls.instance = super(Printer, cls).__new__(cls, *args, **kw)
             cls.instance.dic_color = ConfigLoader().dic_color
             cls.instance.dic_user = ConfigLoader().dic_user
+            cls.instance.dic_title = ConfigLoader().dic_title
+            if (cls.instance.dic_user['platform']['platform'] == 'ios_pythonista'):
+                cls.instance.danmu_print = cls.instance.concole_print
+            else:
+                cls.instance.danmu_print = cls.instance.normal_print
         return cls.instance
         
-    def concole_print(self, msg, color=[]):
-        if color:
-            for i, j in zip(msg, color):
-                console.set_color(*j)
-                print(i, end='')
-            print()
-            console.set_color()
-        else:
-            print(''.join(msg))
+    def concole_print(self, msg, color):
+        for i, j in zip(msg, color):
+            console.set_color(*j)
+            print(i, end='')
+        print()
+        console.set_color()
+            
+    def normal_print(self, msg, color):
+        print(''.join(msg))
              
     # 弹幕 礼物 。。。。type
     def print_danmu(self, dic_msg, type='normal'):
         if not self.dic_user['print_control']['danmu']:
             return
         list_msg, list_color = self.print_danmu_msg(dic_msg)
-        if (self.dic_user['platform']['platform'] == 'ios_pythonista'):
-            self.concole_print(list_msg, list_color)
-        else:
-            self.concole_print(list_msg)
-    
+        self.danmu_print(list_msg, list_color)
+
     def print_danmu_msg(self, dic):
         info = dic['info']
         # tmp = dic['info'][2][1] + ':' + dic['info'][1]

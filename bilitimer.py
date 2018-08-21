@@ -1,52 +1,37 @@
 import asyncio
-import datetime
 import time
-import Tasks
 import printer
 
 
 def CurrentTime():
-    currenttime = int(time.mktime(datetime.datetime.now().timetuple()))
+    currenttime = int(time.time())
     return currenttime
 
 
 class BiliTimer:
-    __slots__ = ('jobs',)
+    __slots__ = ('loop',)
     instance = None
 
-    def __new__(cls, *args, **kw):
+    def __new__(cls, loop=None):
         if not cls.instance:
-            cls.instance = super(BiliTimer, cls).__new__(cls, *args, **kw)
-            cls.instance.jobs = asyncio.PriorityQueue()
+            cls.instance = super(BiliTimer, cls).__new__(cls)
+            cls.instance.loop = loop
         return cls.instance
-        
-    async def run(self):
-        await Tasks.init()
-        while True:
-            i = await self.jobs.get()
-            currenttime = CurrentTime()
-            sleeptime = i[0] - currenttime
-            print('智能睡眠', sleeptime)
-            await asyncio.sleep(max(sleeptime, 0))
-            try:
-                bytes_data = await asyncio.wait_for(i[2](), timeout=15.0)
-            except asyncio.TimeoutError:
-                printer.warn(i[1])
-                printer.warn('timeout')
-            except:
-                # websockets.exceptions.ConnectionClosed'>
-                print(sys.exc_info()[0], sys.exc_info()[1])
-                printer.warn(i[1])
-                printer.warn('!!!!')
+    
+    def excute_async(self, i):
+        print('执行', i)
+        asyncio.ensure_future(i[0](*i[1]))
       
     @staticmethod
-    async def append2list_jobs(func, delay):
-        await BiliTimer.instance.jobs.put((CurrentTime() + delay, func.__name__, func))
-        # print('添加任务')
-        return
+    def call_after(func, delay):
+        inst = BiliTimer.instance
+        value = (func, ())
+        inst.loop.call_later(delay, inst.excute_async, value)
         
     @staticmethod
-    def getresult():
-        print('数目', BiliTimer.instance.jobs.qsize())
-        
+    def append2list_jobs(func, time_expected, tuple_values):
+        inst = BiliTimer.instance
+        current_time = CurrentTime()
+        value = (func, tuple_values)
+        inst.loop.call_later(time_expected-current_time, inst.excute_async, value)
     
