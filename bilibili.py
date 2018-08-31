@@ -121,7 +121,7 @@ class bilibili():
                 print(sys.exc_info()[0], sys.exc_info()[1], url)
                 continue
                 
-    async def get_json_rsp(self, rsp):
+    async def get_json_rsp(self, rsp, url):
         if rsp.status == 200:
             # json_response = await response.json(content_type=None)
             data = await rsp.read()
@@ -138,21 +138,21 @@ class bilibili():
                     return None
             return json_rsp
         elif rsp.status == 403:
-            print('403频繁')
+            print('403频繁', url)
         return None
         
-    async def get_text_rsp(self, rsp):
+    async def get_text_rsp(self, rsp, url):
         if rsp.status == 200:
             return await rsp.text()
         elif rsp.status == 403:
-            print('403频繁')
+            print('403频繁', url)
         return None
 
     async def bili_section_post(self, url, headers=None, data=None, params=None):
         while True:
             try:
                 async with self.bili_section.post(url, headers=headers, data=data, params=params) as response:
-                    json_rsp = await self.get_json_rsp(response)
+                    json_rsp = await self.get_json_rsp(response, url)
                     if json_rsp is not None:
                         return json_rsp
             except:
@@ -164,7 +164,7 @@ class bilibili():
         while True:
             try:
                 async with self.other_session.get(url, headers=headers, data=data, params=params) as response:
-                    json_rsp = await self.get_json_rsp(response)
+                    json_rsp = await self.get_json_rsp(response, url)
                     if json_rsp is not None:
                         return json_rsp
             except:
@@ -176,7 +176,7 @@ class bilibili():
         while True:
             try:
                 async with self.other_session.post(url, headers=headers, data=data, params=params) as response:
-                    json_rsp = await self.get_json_rsp(response)
+                    json_rsp = await self.get_json_rsp(response, url)
                     if json_rsp is not None:
                         return json_rsp
             except:
@@ -188,7 +188,7 @@ class bilibili():
         while True:
             try:
                 async with self.bili_section.get(url, headers=headers, data=data, params=params) as response:
-                    json_rsp = await self.get_json_rsp(response)
+                    json_rsp = await self.get_json_rsp(response, url)
                     if json_rsp is not None:
                         return json_rsp
             except:
@@ -200,7 +200,7 @@ class bilibili():
         while True:
             try:
                 async with self.other_session.get(url, headers=headers, data=data, params=params) as response:
-                    text_rsp = await self.get_text_rsp(response)
+                    text_rsp = await self.get_text_rsp(response, url)
                     if text_rsp is not None:
                         return text_rsp
             except:
@@ -557,13 +557,18 @@ class bilibili():
         response = await inst.bili_section_post(url, params=payload, headers=inst.dic_bilibili['appheaders'])
         # print(response)
         return response
-
+        
     @staticmethod
-    async def get_gift_of_captain(roomid, id):
+    async def get_gift_of_guard(roomid, id):
         inst = bilibili.instance
-        join_url = f"{base_url}/lottery/v1/lottery/join"
-        payload = {"roomid": roomid, "id": id, "type": "guard", "csrf_token": ''}
-        response2 = await inst.bili_section_post(join_url, data=payload, headers=inst.dic_bilibili['pcheaders'])
+        join_url = f"{base_url}/lottery/v2/Lottery/join"
+        data = {
+            'roomid': roomid,
+            'id': id,
+            'type': 'guard',
+            'csrf_token': inst.dic_bilibili['csrf']
+        }
+        response2 = await inst.bili_section_post(join_url, data=data, headers=inst.dic_bilibili['pcheaders'])
         return response2
 
     @staticmethod
@@ -582,13 +587,13 @@ class bilibili():
         url = f"{base_url}/gift/v3/smalltv/check?roomid={real_roomid}"
         response = await inst.bili_section_get(url, headers=inst.dic_bilibili['pcheaders'])
         return response
-
+        
     @staticmethod
-    async def get_giftlist_of_captain(roomid):
+    async def get_giftlist_of_guard(roomid):
         inst = bilibili.instance
-        true_url = f'{base_url}/lottery/v1/lottery/check?roomid={roomid}'
-        response1 = await inst.bili_section_get(true_url, headers=inst.dic_bilibili['pcheaders'])
-        return response1
+        true_url = f'{base_url}/lottery/v1/Lottery/check_guard?roomid={roomid}'
+        response = await inst.bili_section_get(true_url, headers=inst.dic_bilibili['pcheaders'])
+        return response
 
     @staticmethod
     async def get_activity_result(activity_roomid, activity_raffleid):

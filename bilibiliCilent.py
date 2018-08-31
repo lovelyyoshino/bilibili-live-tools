@@ -8,14 +8,13 @@ import utils
 import asyncio
 import struct
 import json
-import re
 import sys
 import aiohttp
                                                           
 
-class bilibiliClient():
+class BaseDanmu():
     
-    __slots__ = ('ws', 'roomid', 'area_id', 'loop_func', 'client')
+    __slots__ = ('ws', 'roomid', 'area_id', 'client')
     structer = struct.Struct('!I2H2I')
 
     def __init__(self, roomid=None, area_id=None):
@@ -23,9 +22,7 @@ class bilibiliClient():
         if roomid is None:
             self.roomid = ConfigLoader().dic_user['other_control']['default_monitor_roomid']
             self.area_id = 0
-            self.loop_func = self.printDanMu
         else:
-            self.loop_func = self.DanMuraffle
             self.roomid = roomid
             self.area_id = area_id
 
@@ -113,7 +110,7 @@ class bilibiliClient():
             loop_time = 0
             while len_read != len_bytes_datas:
                 loop_time += 1
-                if loop_time > 50:
+                if loop_time > 100:
                     print('请联系作者', bytes_datas)
                 state = None
                 split_header = self.structer.unpack(bytes_datas[len_read:16+len_read])
@@ -127,7 +124,7 @@ class bilibiliClient():
                 elif opt == 5:
                     messages = remain_data.decode('utf-8')
                     dic = json.loads(messages)
-                    state = self.loop_func(dic)
+                    state = self.handle_danmu(dic)
                 # 握手确认
                 elif opt == 8:
                     printer.info([f'{self.area_id}号弹幕监控进入房间（{self.roomid}）'], True)
@@ -137,16 +134,23 @@ class bilibiliClient():
                 if state is not None and not state:
                     return
                 len_read += len_data
-                                        
-    def printDanMu(self, dic):
+                
+    def handle_danmu(self, dic):
+        return True
+                
+                
+class DanmuPrinter(BaseDanmu):
+    def handle_danmu(self, dic):
         cmd = dic['cmd']
         # print(cmd)
         if cmd == 'DANMU_MSG':
             # print(dic)
             Printer().print_danmu(dic)
             return
-    
-    def DanMuraffle(self, dic):
+
+        
+class DanmuRaffleHandler(BaseDanmu):
+    def handle_danmu(self, dic):
         cmd = dic['cmd']
         
         if cmd == 'PREPARING':
@@ -183,16 +187,19 @@ class bilibiliClient():
                 rafflehandler.Rafflehandler.Put2Queue((real_roomid,), rafflehandler.handle_1_room_TV)
                 rafflehandler.Rafflehandler.Put2Queue((real_roomid,), rafflehandler.handle_1_room_activity)
                 Statistics.append2pushed_raffle(type_text, area_id=self.area_id)
-                
+        
         elif cmd == 'GUARD_MSG':
-            a = re.compile(r"(?<=在主播 )\S+(?= 的直播间开通了总督)")
-            print(dic)
-            res = re.search(a, dic['msg'])
-            if res is not None:
-                name = str(res.group())
-                printer.info([f'{self.area_id}号弹幕监控检测到{name:^9}的总督'], True)
-                rafflehandler.Rafflehandler.Put2Queue((((name,), utils.find_live_user_roomid),), rafflehandler.handle_1_room_captain)
+            if 'buy_type' in dic and dic['buy_type'] == 1:
+                roomid = dic['roomid']
+                printer.info([f'{self.area_id}号弹幕监控检测到{roomid:^9}的总督'], True)
+                rafflehandler.Rafflehandler.Put2Queue((roomid,), rafflehandler.handle_1_room_guard)
                 Statistics.append2pushed_raffle('总督', area_id=self.area_id)
+            if 'buy_type' in dic and dic['buy_type'] != 1:
+                print(dic)
+                # roomid = dic['roomid']
+                printer.info([f'{self.area_id}号弹幕监控检测到{self.roomid:^9}的提督/舰长'], True)
+                rafflehandler.Rafflehandler.Put2Queue((self.roomid,), rafflehandler.handle_1_room_guard)
+                Statistics.append2pushed_raffle('提督/舰长', area_id=self.area_id)
             
         
                   

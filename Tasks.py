@@ -179,7 +179,12 @@ async def GetVideoExp(list_topvideo):
     await bilibili().Heartbeat(aid, cid)
 
 async def GiveCoinTask(coin_remain, list_topvideo):
+    i = 0
     while coin_remain > 0:
+        i += 1
+        if i > 20:
+            print('本次可投票视频获取量不足')
+            return
         aid = random.choice(list_topvideo)
         rsp = await utils.GiveCoin2Av(aid, 1)
         if rsp is None:
@@ -189,7 +194,7 @@ async def GiveCoinTask(coin_remain, list_topvideo):
 
 async def GetVideoShareExp(list_topvideo):
     print('开始获取视频分享经验')
-    aid = list_topvideo[random.randint(0, 19)]
+    aid = random.choice(list_topvideo)
     await bilibili().DailyVideoShare(aid)
 
 async def BiliMainTask():

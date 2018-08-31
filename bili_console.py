@@ -4,6 +4,7 @@ from connect import connect
 from printer import Printer
 from configloader import ConfigLoader
 from rafflehandler import Rafflehandler
+import rafflehandler
 import OnlineHeart
 import asyncio
 from cmd import Cmd
@@ -135,6 +136,13 @@ class Biliconsole(Cmd):
         video_id = input('请输入av号')
         num = input('输入数目')
         self.append2list_console([[int(video_id), int(num)], utils.GiveCoin2Av])
+        
+    def do_19(self, line):
+        try:
+            roomid = int(input('输入roomid'))
+            self.append2list_console([[(roomid,), rafflehandler.handle_1_room_guard], rafflehandler.Rafflehandler.Put2Queue_wait])
+        except:
+            pass
         
     def do_check(self, line):
         Rafflehandler.getlist()

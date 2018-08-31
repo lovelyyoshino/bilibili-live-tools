@@ -345,7 +345,7 @@ async def send_gift_web(roomid, num_wanted, bagid, giftid=None):
         # print(json_response1['data'])
         print(f'# 送出礼物: {json_response1["data"]["gift_name"]}X{json_response1["data"]["gift_num"]}')
     else:
-        print("# 错误", json_response1['msg'])
+        print("# 错误", json_response1['msg'], roomid, num_wanted, bagid, giftid)
 
 async def fetch_liveuser_info(real_roomid):
     json_response = await bilibili.request_fetch_liveuser_info(real_roomid)
