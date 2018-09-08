@@ -31,6 +31,7 @@ var_console = bili_console.Biliconsole(loop)
 
 list_raffle_connection = [connect.RaffleConnect(i) for i in range(1, 5)]
 list_raffle_connection_task = [i.run() for i in list_raffle_connection]
+yjconnection = connect.YjConnection()
 
 danmu_connection = connect.connect()
 
@@ -47,9 +48,7 @@ tasks = [
     Silver.run(),
     danmu_connection.run(),
     rafflehandler.run(),
-    # var_console.run(),
-    # bili_timer.run(),
-    
+    yjconnection.run()
 ]
 try:
     loop.run_until_complete(asyncio.wait(tasks + list_raffle_connection_task))

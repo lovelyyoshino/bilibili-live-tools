@@ -435,11 +435,12 @@ async def GetVideoCid(video_aid):
 
 async def GetRewardInfo(show=True):
     json_rsp = await bilibili().ReqMasterInfo()
-    login = json_rsp['login']
-    watch_av = json_rsp['watch_av']
-    coins_av = json_rsp['coins_av']
-    share_av = json_rsp['share_av']
-    level_info = json_rsp["level_info"]
+    data = json_rsp['data']
+    login = data['login']
+    watch_av = data['watch_av']
+    coins_av = data['coins_av']
+    share_av = data['share_av']
+    level_info = data["level_info"]
     current_exp = level_info['current_exp']
     next_exp = level_info['next_exp']
     if next_exp == -1:

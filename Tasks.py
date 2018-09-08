@@ -113,8 +113,8 @@ async def send_medal_gift():
     await full_intimate(list_gift, list_medal)
 
 async def send_gift():
-    await send_expiring_gift()
     await send_medal_gift()
+    await send_expiring_gift()
     BiliTimer.call_after(send_gift, 21600)
 
 async def full_intimate(list_gift, list_medal):
@@ -125,6 +125,8 @@ async def full_intimate(list_gift, list_medal):
         # print(list_gift)
         for i in list_gift:
             gift_id, gift_num, bag_id = i
+            if gift_num == 0:
+                continue
             # print(gift_id, bag_id)
             if (gift_num * dic_gift[gift_id] <= left_intimate):
                 pass
@@ -174,7 +176,7 @@ async def sliver2coin():
 
 async def GetVideoExp(list_topvideo):
     print('开始获取视频观看经验')
-    aid = list_topvideo[random.randint(0, 19)]
+    aid = random.choice(list_topvideo)
     cid = await utils.GetVideoCid(aid)
     await bilibili().Heartbeat(aid, cid)
 
