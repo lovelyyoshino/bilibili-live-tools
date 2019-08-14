@@ -1,148 +1,138 @@
+import time
 import asyncio
-import utils
-import bilibiliCilent
-import printer
-from bilibili import bilibili
-from configloader import ConfigLoader
-import random
-
-     
-async def check_room_state(roomid):
-    json_rsp = await bilibili.req_room_init(roomid)
-    return json_rsp['data']['live_status']
-
-async def get_one(areaid):
-    # 1 娱乐分区, 2 游戏分区, 3 手游分区, 4 绘画分区
-    if areaid == 1:
-        roomid = 23058
-        state = await check_room_state(roomid)
-        if state == 1:
-            printer.info([f'{areaid}号弹幕监控选择房间（{roomid}）'], True)
-            return roomid
-            
-    while True:
-        json_rsp = await bilibili.req_realroomid(areaid)
-        data = json_rsp['data']
-        roomid = random.choice(data)['roomid']
-        state = await check_room_state(roomid)
-        if state == 1:
-            printer.info([f'{areaid}号弹幕监控选择房间（{roomid}）'], True)
-            return roomid
+import traceback
+import MultiRoom
+from bilibiliCilent import bilibiliClient
+from printer import Printer
 
 
 class connect():
-    __slots__ = ('danmuji')
     instance = None
-    
+    areas = []
+    roomids = []
+    tasks = {}
+
     def __new__(cls, *args, **kw):
         if not cls.instance:
             cls.instance = super(connect, cls).__new__(cls, *args, **kw)
             cls.instance.danmuji = None
+            cls.instance.tag_reconnect = False
+            cls.instance.check_time = {}
+            cls.instance.handle_area = []
         return cls.instance
-        
-    async def run(self):
-        self.danmuji = bilibiliCilent.DanmuPrinter()
-        while True:
-            print('# 正在启动直播监控弹幕姬')
-            time_start = int(utils.CurrentTime())
-            connect_results = await self.danmuji.connectServer()
-            # print(connect_results)
-            if not connect_results:
-                continue
-            task_main = asyncio.ensure_future(self.danmuji.ReceiveMessageLoop())
-            task_heartbeat = asyncio.ensure_future(self.danmuji.HeartbeatLoop())
-            finished, pending = await asyncio.wait([task_main, task_heartbeat], return_when=asyncio.FIRST_COMPLETED)
-            print('主弹幕姬异常或主动断开，正在处理剩余信息')
-            time_end = int(utils.CurrentTime())
-            if not task_heartbeat.done():
-                task_heartbeat.cancel()
-            task_terminate = asyncio.ensure_future(self.danmuji.close_connection())
-            await asyncio.wait(pending)
-            await asyncio.wait([task_terminate])
-            printer.info(['主弹幕姬退出，剩余任务处理完毕'], True)
-            if time_end - time_start < 5:
-                print('# 当前网络不稳定，为避免频繁不必要尝试，将自动在5秒后重试')
-                await asyncio.sleep(5)
-    
-    @staticmethod
-    async def reconnect(roomid):
-        ConfigLoader().dic_user['other_control']['default_monitor_roomid'] = roomid
-        print('已经切换roomid')
-        if connect.instance.danmuji is not None:
-            connect.instance.danmuji.roomid = roomid
-            await connect.instance.danmuji.close_connection()
-        
-        
-class RaffleConnect():
-    def __init__(self, areaid):
-        self.danmuji = None
-        self.roomid = 0
-        self.areaid = areaid
-        
-    async def run(self):
-        self.danmuji = bilibiliCilent.DanmuRaffleHandler(self.roomid, self.areaid)
-        while True:
-            self.danmuji.roomid = await get_one(self.areaid)
-            printer.info(['# 正在启动抽奖监控弹幕姬'], True)
-            time_start = int(utils.CurrentTime())
-            connect_results = await self.danmuji.connectServer()
-            # print(connect_results)
-            if not connect_results:
-                continue
-            task_main = asyncio.ensure_future(self.danmuji.ReceiveMessageLoop())
-            task_heartbeat = asyncio.ensure_future(self.danmuji.HeartbeatLoop())
-            task_checkarea = asyncio.ensure_future(self.danmuji.CheckArea())
-            finished, pending = await asyncio.wait([task_main, task_heartbeat, task_checkarea], return_when=asyncio.FIRST_COMPLETED)
-            printer.info([f'{self.areaid}号弹幕姬异常或主动断开，正在处理剩余信息'], True)
-            time_end = int(utils.CurrentTime())
-            if not task_heartbeat.done():
-                task_heartbeat.cancel()
-            if not task_checkarea.done():
-                task_checkarea.cancel()
-            task_terminate = asyncio.ensure_future(self.danmuji.close_connection())
-            await asyncio.wait(pending)
-            await asyncio.wait([task_terminate])
-            printer.info([f'{self.areaid}号弹幕姬退出，剩余任务处理完毕'], True)
-            if time_end - time_start < 5:
-                print('# 当前网络不稳定，为避免频繁不必要尝试，将自动在5秒后重试')
-                await asyncio.sleep(5)
-                
-                
-class YjConnection():
-    def __init__(self):
-        self.danmuji = None
-        self.roomid = 0
-        self.areaid = -1
-        
-    async def run(self):
-        self.roomid = ConfigLoader().dic_user['other_control']['raffle_minitor_roomid']
-        if not self.roomid:
-            print('hjjkkk结束了坎坎坷坷坎坎坷坷')
-            return
-        self.danmuji = bilibiliCilent.YjMonitorHandler(self.roomid, self.areaid)
-        while True:
-            print('# 正在启动直播监控弹幕姬')
-            time_start = int(utils.CurrentTime())
-            connect_results = await self.danmuji.connectServer()
-            # print(connect_results)
-            if not connect_results:
-                continue
-            task_main = asyncio.ensure_future(self.danmuji.ReceiveMessageLoop())
-            task_heartbeat = asyncio.ensure_future(self.danmuji.HeartbeatLoop())
-            finished, pending = await asyncio.wait([task_main, task_heartbeat], return_when=asyncio.FIRST_COMPLETED)
-            print('主弹幕姬异常或主动断开，正在处理剩余信息')
-            time_end = int(utils.CurrentTime())
-            if not task_heartbeat.done():
-                task_heartbeat.cancel()
-            task_terminate = asyncio.ensure_future(self.danmuji.close_connection())
-            await asyncio.wait(pending)
-            await asyncio.wait([task_terminate])
-            printer.info(['主弹幕姬退出，剩余任务处理完毕'], True)
-            if time_end - time_start < 5:
-                print('# 当前网络不稳定，为避免频繁不必要尝试，将自动在5秒后重试')
-                await asyncio.sleep(5)
-            
-            
 
-        
-                    
+    async def create(self):
+        area_list = await MultiRoom.get_area_list()
+        tmp = await MultiRoom.get_all(area_list)
+        init_time = time.time()
+        for area_id in area_list:
+            self.check_time[str(area_id)] = init_time
+        for i in range(len(tmp)):
+            connect.roomids.append(tmp[i][0])
+        for n in range(len(tmp)):
+            connect.areas.append(tmp[n][1])
+        for roomid,area in zip(connect.roomids, connect.areas):
+            self.danmuji = bilibiliClient(roomid,area)
+            task1 = asyncio.ensure_future(self.danmuji.connectServer())
+            task2 = asyncio.ensure_future(self.danmuji.HeartbeatLoop())
+            connect.tasks[roomid] = [task1, task2]
+
+        while True:
+            await asyncio.sleep(10)
+            try:
+                for roomid in list(connect.tasks):
+                    item = connect.tasks.get(roomid, None)
+                    if (item is None) or (not len(item)):
+                        Printer().printer(f"房间 {roomid} 任务已被清理，跳过", "Info", "green")
+                        continue
+                    task1 = item[0]
+                    task2 = item[1]
+                    if task1.done() == True or task2.done() == True:
+                        area = connect.areas[connect.roomids.index(roomid)]
+                        Printer().printer(f"[{area}分区] 房间 {roomid} 任务出现异常", "Info", "green")
+                        await self.check_area(roomid=roomid, area=area, mandatory_recreate=True)
+                    else:
+                        # Printer().printer(f"[{area}分区] 房间 {roomid} 任务保持正常", "Info", "green")
+                        pass
+            except Exception:
+                Printer().printer(traceback.format_exc(), "Error", "red")
+
+    async def check_connect(self, skip_area=None):
+        if self.tag_reconnect:
+            Printer().printer("connect检查任务已在运行", "Info", "green")
+            return
+        else:
+            self.tag_reconnect = True
+        # print('connect类属性:', connect.roomids, connect.areas)
+        if not len(connect.roomids):
+            # 说明程序刚启动还没获取监控房间，此时也不需要检查
+            self.tag_reconnect = False
+            return
+        else:
+            for roomid, area in list(zip(connect.roomids, connect.areas)):
+                if (skip_area is not None) and (skip_area == area):
+                    continue
+                else:
+                    await self.check_area(roomid=roomid, area=area)
+        Printer().printer("connect检查任务已完成", "Info", "green")
+        self.tag_reconnect = False
+
+    async def check_area(self, area, roomid=None, mandatory_check=False, mandatory_recreate=False):
+        if len(str(area)) == 1:
+            area = [tem_area for tem_area in connect.areas if str(area) in tem_area][0]
+        if roomid is None:
+            roomid = connect.roomids[connect.areas.index(area)]
+
+        if not mandatory_check and time.time() - self.check_time[area[:1]] < 60:
+            Printer().printer(f"[{area}分区] 近已检查，跳过", "Info", "green")
+            [ckd_roomid, ckd_area] = [roomid, area]
+        else:
+            # Printer().printer(f"[{area}分区] {roomid} 检查开始", "Info", "green")
+            self.check_time[area[:1]] = time.time()
+            [ckd_roomid, ckd_area] = await MultiRoom.check_state(roomid=roomid, area=area)
+            self.check_time[area[:1]] = time.time()
+        if mandatory_recreate or ckd_roomid != roomid:
+            await self.recreate(new_roomid=ckd_roomid, area=ckd_area)
+
+    async def recreate(self, area, new_roomid=None):
+        if area in self.handle_area:
+            Printer().printer(f"[{area}分区] 重连任务已在处理", "Info", "green")
+            return
+        else:
+            self.handle_area.append(area)
+            # Printer().printer(f"[{area}分区] 重连任务开始处理", "Info", "green")
+        try:
+            old_roomid = connect.roomids[connect.areas.index(area)]
+            item = connect.tasks[old_roomid]
+            task1 = item[0]
+            task2 = item[1]
+            if not task1.done():
+                task1.cancel()
+            if not task2.done():
+                task2.cancel()
+            connect.tasks[old_roomid] = []
+
+            if new_roomid is None:
+                self.check_time[area[:1]] = time.time()
+                [new_roomid, new_area] = await MultiRoom.check_state(area)
+                self.check_time[area[:1]] = time.time()
+            else:
+                new_area = area
+
+            if not new_roomid == old_roomid:
+                connect.roomids.remove(old_roomid)
+                connect.areas.remove(area)
+                del connect.tasks[old_roomid]
+                connect.roomids.append(new_roomid)
+                connect.areas.append(new_area)
+                connect.tasks[new_roomid] = []
+                Printer().printer(f"更新监听房间列表{connect.roomids} {connect.areas}","Info","green")
+
+            self.danmuji = bilibiliClient(new_roomid, new_area)
+            task11 = asyncio.ensure_future(self.danmuji.connectServer())
+            task21 = asyncio.ensure_future(self.danmuji.HeartbeatLoop())
+            connect.tasks[new_roomid] = [task11, task21]
+        except Exception:
+            Printer().printer(traceback.format_exc(), "Error", "red")
+        # Printer().printer(f"[{area}分区] 重连任务处理完毕", "Info", "green")
+        self.handle_area.remove(area)

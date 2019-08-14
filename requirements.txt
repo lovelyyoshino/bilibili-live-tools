@@ -1,6 +1,5 @@
 requests
 rsa
 aiohttp
-webcolors
-Pillow
-toml
+termcolor
+colorama

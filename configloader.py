@@ -1,99 +1,51 @@
-import webcolors
-import toml
+import configparser
+import codecs
+
+def load_bilibili(file):
+    cf_bilibili = configparser.ConfigParser()
+    cf_bilibili.optionxform = str
+    cf_bilibili.read_file(codecs.open(file, "r", "utf8"))
+    dic_bilibili = cf_bilibili._sections
+    dic_nomalised_bilibili = dic_bilibili['normal'].copy()
+    dic_nomalised_bilibili['saved-session'] = dic_bilibili['saved-session'].copy()
+    dic_nomalised_bilibili['account'] = dic_bilibili['account'].copy()
+    if dic_nomalised_bilibili['account']['username']:
+        pass
+    else:
+        username = input("# 输入帐号: ")
+        password = input("# 输入密码: ")
+        cf_bilibili.set('account', 'username', username)
+        cf_bilibili.set('account', 'password', password)
+        cf_bilibili.write(codecs.open(file, "w+", "utf8"))
+        dic_nomalised_bilibili['account']['username'] = username
+        dic_nomalised_bilibili['account']['password'] = password
+    dic_bilibili_type = dic_bilibili['types']
+    # str to int
+    for i in dic_bilibili_type['int'].split():
+        dic_nomalised_bilibili[i] = int(dic_bilibili['normal'][i])
+    for i in dic_bilibili.keys():
+        # print(i)
+        if i[0:3] == 'dic':
+            dic_nomalised_bilibili[i[4:]] = dic_bilibili[i]
+    return dic_nomalised_bilibili
 
 
-# "#969696"
-def hex_to_rgb_percent(hex_str):
-    color = webcolors.hex_to_rgb_percent(hex_str)
-    return [float(i.strip('%'))/100.0 for i in color]
 
 
-# "255 255 255"
-def rgb_to_percent(rgb_list):
-    color = webcolors.rgb_to_rgb_percent(rgb_list)
-    return [float(i.strip('%'))/100.0 for i in color]
-    
-    
-class ConfigLoader():
-    
-    instance = None
-
-    def __new__(cls, fileDir=None):
-        if not cls.instance:
-            cls.instance = super(ConfigLoader, cls).__new__(cls)
-            
-            colorfile = f'{fileDir}/conf/color.toml'
-            userfile = f'{fileDir}/conf/user.toml'
-            bilibilifile = f'{fileDir}/conf/bilibili.toml'
-            titlefile = f'{fileDir}/conf/title.toml'
-            
-            cls.instance.colorfile = colorfile
-            cls.instance.dic_color = cls.instance.load_color()
-            # print(cls.instance.dic_color)
-            
-            cls.instance.userfile = userfile
-            cls.instance.dic_user = cls.instance.load_user()
-            # print(cls.instance.dic_user)
-            
-            cls.instance.bilibilifile = bilibilifile
-            cls.instance.dic_bilibili = cls.instance.load_bilibili()
-            # print(cls.instance.dic_bilibili)
-            
-            cls.instance.titlefile = titlefile
-            cls.instance.dic_title = cls.instance.load_title()
-            print("# 初始化完成")
-        return cls.instance
-    
-    def write2bilibili(self, dic):
-        with open(self.bilibilifile, encoding="utf-8") as f:
-            dic_bilibili = toml.load(f)
-        for i in dic.keys():
-            dic_bilibili['saved-session'][i] = dic[i]
-        with open(self.bilibilifile, 'w', encoding="utf-8") as f:
-            toml.dump(dic_bilibili, f)
-            
-    def load_bilibili(self):
-        with open(self.bilibilifile, encoding="utf-8") as f:
-            dic_bilibili = toml.load(f)
-        if not dic_bilibili['account']['username']:
-            username = input("# 输入帐号: ")
-            password = input("# 输入密码: ")
-            dic_bilibili['account']['username'] = username
-            dic_bilibili['account']['password'] = password
-            with open(self.bilibilifile, 'w', encoding="utf-8") as f:
-                toml.dump(dic_bilibili, f)
-                
-        return dic_bilibili
-                
-    def load_color(self):
-        with open(self.colorfile, encoding="utf-8") as f:
-            dic_color = toml.load(f)
-        for i in dic_color.values():
-            for j in i.keys():
-                if isinstance(i[j], str):
-                    i[j] = hex_to_rgb_percent(i[j])
-                else:
-                    i[j] = rgb_to_percent(i[j])
-                        
-        return dic_color
-                        
-    def load_user(self):
-        with open(self.userfile, encoding="utf-8") as f:
-            dic_user = toml.load(f)
-        return dic_user
-        
-    def load_title(self):
-        with open(self.titlefile, encoding="utf-8") as f:
-            dic_title = toml.load(f)
-        return dic_title
-        
-
-    
-    
-        
-        
-            
-       
-        
+def load_user(file):
+    cf_user = configparser.ConfigParser()
+    cf_user.read_file(codecs.open(file, "r", "utf8"))
+    dic_user = cf_user._sections
+    return dic_user
 
 
+def write2bilibili(dic):
+    cf_bilibili = configparser.ConfigParser(interpolation=None)
+    cf_bilibili.optionxform = str
+
+    cf_bilibili.read_file(codecs.open("conf/bilibili.conf", "r", "utf8"))
+
+    for i in dic.keys():
+        cf_bilibili.set('saved-session', i, dic[i])
+
+    cf_bilibili.write(codecs.open("conf/bilibili.conf", "w+", "utf8"))

@@ -1,67 +1,54 @@
-import OnlineHeart
-import Silver
-import Tasks
-import connect
+from OnlineHeart import OnlineHeart
+from Silver import Silver
+from LotteryResult import LotteryResult
+from Tasks import Tasks
+from connect import connect
 from rafflehandler import Rafflehandler
 import asyncio
+from login import login
 from printer import Printer
 from statistics import Statistics
 from bilibili import bilibili
-from configloader import ConfigLoader
 import threading
-import os
-import login
-import bili_console
-from bilitimer import BiliTimer
-
+import biliconsole
+from pkLottery import PKLottery
 
 loop = asyncio.get_event_loop()
-fileDir = os.path.dirname(os.path.realpath('__file__'))
-
-ConfigLoader(fileDir)
-
-# print('Hello world.')
+loop1 = asyncio.get_event_loop()
 printer = Printer()
 bilibili()
-login.login()
 Statistics()
-
 rafflehandler = Rafflehandler()
-var_console = bili_console.Biliconsole(loop)
+biliconsole.Biliconsole()
 
-list_raffle_connection = [connect.RaffleConnect(i) for i in range(1, 5)]
-list_raffle_connection_task = [i.run() for i in list_raffle_connection]
-yjconnection = connect.YjConnection()
+task = OnlineHeart()
+task1 = Silver()
+task2 = Tasks()
+task3 = LotteryResult()
+task4 = connect()
+task5 = PKLottery()
 
-danmu_connection = connect.connect()
-
-
-bili_timer = BiliTimer(loop)
-
-console_thread = threading.Thread(target=var_console.cmdloop)
+console_thread = threading.Thread(target=biliconsole.controler)
 
 console_thread.start()
 
-Tasks.init()
-tasks = [
-    OnlineHeart.run(),
-    Silver.run(),
-    danmu_connection.run(),
-    rafflehandler.run(),
-    yjconnection.run()
+tasks1 = [
+    login().login_new()
 ]
-try:
-    loop.run_until_complete(asyncio.wait(tasks + list_raffle_connection_task))
-except KeyboardInterrupt:
-    # print(sys.exc_info()[0], sys.exc_info()[1])
-    if ConfigLoader().dic_user['other_control']['keep-login']:
-        pass
-    else:
-        response = login.logout()
-    
+loop.run_until_complete(asyncio.wait(tasks1))
+
+tasks = [
+    task.run(),
+    task1.run(),
+    task2.run(),
+    biliconsole.Biliconsole().run(),
+    task4.create(),
+    task3.query(),
+    rafflehandler.run(),
+    task5.run()
+]
+
+loop.run_until_complete(asyncio.wait(tasks))
 console_thread.join()
 
 loop.close()
-    
-
-

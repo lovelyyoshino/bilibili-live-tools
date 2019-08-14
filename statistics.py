@@ -1,4 +1,9 @@
 import datetime
+import asyncio
+import traceback
+import utils
+from bilibili import bilibili
+from printer import Printer
 
 
 # 13:30  --->  13.5
@@ -8,98 +13,117 @@ def decimal_time():
 
 
 class Statistics:
-    __slots__ = ('activity_id_list', 'TV_id_list', 'result', 'pushed_raffle', 'joined_raffle')
     instance = None
 
     def __new__(cls, *args, **kw):
         if not cls.instance:
             cls.instance = super(Statistics, cls).__new__(cls, *args, **kw)
-            cls.instance.activity_id_list = []
-            # cls.instance.activity_time_list = []
-            cls.instance.TV_id_list = []
-            # cls.instance.TV_time_list = []
-            cls.instance.pushed_raffle = {}
-            
-            cls.instance.joined_raffle = {}
+            cls.instance.activity_raffleid_list = []
+            cls.instance.activity_roomid_list = []
+            cls.instance.TV_raffleid_list = []
+            cls.instance.TV_roomid_list = []
+
+            cls.instance.pushed_event = []
+            cls.instance.pushed_TV = []
+            cls.instance.monitor = {}
+
+            cls.instance.joined_event = []
+            cls.instance.joined_TV = []
+            cls.instance.total_area = 1
             cls.instance.result = {}
-            # cls.instance.TVsleeptime = 185
-            # cls.instance.activitysleeptime = 125
+
         return cls.instance
 
-    @staticmethod
-    def add_to_result(type, num):
-        inst = Statistics.instance
-        inst.result[type] = inst.result.get(type, 0) + int(num)
+    def add_to_result(self, type, num):
+        self.result[type] = self.result.get(type, 0) + int(num)
 
-    @staticmethod
-    def getlist():
-        inst = Statistics.instance
-        for k, v in inst.pushed_raffle.items():
-            print(f'本次推送{k}次数: {v}')
-            
+    def getlist(self):
+        # print(self.joined_event)
+        # print(self.joined_TV)
+        print('本次推送活动抽奖次数:', len(self.pushed_event))
+        print('本次推送电视抽奖次数:', len(self.pushed_TV))
         print()
-        for k, v in inst.joined_raffle.items():
-            print(f'本次参与{k}次数: {v}')
+        print('本次参与活动抽奖次数:', len(self.joined_event))
+        print('本次参与电视抽奖次数:', len(self.joined_TV))
 
-    @staticmethod
-    def getresult():
-        inst = Statistics.instance
+    def getresult(self):
         print('本次参与抽奖结果为：')
-        for k, v in inst.result.items():
-            print(f'{k}X{v}')
+        for k, v in self.result.items():
+            print('{}X{}'.format(k, v))
 
-    @staticmethod
-    def append_to_activitylist(raffleid, text1, time=''):
-        inst = Statistics.instance
-        inst.activity_id_list.append((text1, raffleid))
-        # inst.activity_time_list.append(int(time))
-        # inst.activity_time_list.append(int(CurrentTime()))
-        inst.append2joined_raffle('活动(合计)')
-        # print("activity加入成功", inst.joined_event)
+    def delete_0st_TVlist(self):
+        del self.TV_roomid_list[0]
+        del self.TV_raffleid_list[0]
 
-    @staticmethod
-    def append_to_TVlist(raffleid, real_roomid, time=''):
-        inst = Statistics.instance
-        inst.TV_id_list.append((real_roomid, raffleid))
-        # inst.TV_time_list.append(int(time)+int(CurrentTime()))
-        # inst.TV_time_list.append(int(CurrentTime()))
-        inst.append2joined_raffle('小电视(合计)')
-        # print("tv加入成功", inst.joined_TV)
-        
-    @staticmethod
-    def append_to_guardlist():
-        inst = Statistics.instance
-        inst.append2joined_raffle('总督(合计)')
-        
-    @staticmethod
-    def append2joined_raffle(type, num=1):
-        inst = Statistics.instance
-        inst.joined_raffle[type] = inst.joined_raffle.get(type, 0) + int(num)
-        
-    @staticmethod
-    def append2pushed_raffle(type, area_id=0, num=1):
-        inst = Statistics.instance
-        if '摩天' in type or '金人' in type:
-            inst.pushed_raffle[type] = inst.pushed_raffle.get(type, 0) + int(num)
-        else:
-            if area_id == 1:
-                inst.pushed_raffle[type] = inst.pushed_raffle.get(type, 0) + int(num)
-                    
-    @staticmethod
-    def check_TVlist(real_roomid, raffleid):
-        inst = Statistics.instance
-        if (real_roomid, raffleid) not in inst.TV_id_list:
+    async def clean_TV(self):
+        while len(self.TV_raffleid_list):
+            await asyncio.sleep(0.2)
+
+            response = await bilibili().get_TV_result(self.TV_roomid_list[0], self.TV_raffleid_list[0])
+            json_response = await response.json()
+            try:
+                if json_response['msg'] == '正在抽奖中..':
+                    break
+                data = json_response['data']
+                if not len(data):
+                    # Printer().printer(f"房间 {self.TV_roomid_list[0]} 广播道具抽奖 {self.TV_raffleid_list[0]} 结果: {json_response['msg']}",
+                    #                   "Lottery", "cyan")
+                    # print('B站错误返回，报已错过')
+                    continue
+                if data['gift_id'] != '-1':
+                    Printer().printer(f"房间 {self.TV_roomid_list[0]} 广播道具抽奖 {self.TV_raffleid_list[0]} 结果: {data['gift_name']}X{data['gift_num']}",
+                                      "Lottery", "cyan")
+                    self.add_to_result(data['gift_name'], int(data['gift_num']))
+                else:
+                    Printer().printer(f"房间 {self.TV_roomid_list[0]} 广播道具抽奖 {self.TV_raffleid_list[0]} 结果: {json_response['msg']}",
+                                      "Lottery", "cyan")
+
+                self.delete_0st_TVlist()
+            except Exception:
+                Printer().printer(f'获取到异常抽奖结果: {json_response}', "Warning", "red")
+
+        if self.monitor:
+            check_list = list(self.monitor)
+            await asyncio.sleep(3)
+
+            for roomid in check_list:
+                check_str = bin(self.monitor[roomid]).replace('0b', '')
+                if len(check_str) < self.total_area:
+                    check_str = check_str.rjust(self.total_area, '0')
+                elif len(check_str) > self.total_area:
+                    self.total_area = len(check_str)
+                # print(roomid, check_str)
+                check_int = [int(check) for check in check_str]
+                area_sum = sum(check_int)
+                try:
+                    if area_sum in [1, self.total_area]:
+                        pass
+                    elif area_sum == 2:
+                        to_check = [self.total_area-index for index in range(self.total_area) if check_int[index] == 1]
+                        Printer().printer(f"发现监控重复 {to_check}", "Info", "green")
+                        await utils.check_area_list(to_check)
+                    elif area_sum == self.total_area-1:
+                        to_check = [self.total_area-index for index in range(self.total_area) if check_int[index] == 0]
+                        Printer().printer(f"发现监控缺失 {to_check}", "Info", "green")
+                        await utils.check_area_list(to_check)
+                    else:
+                        Printer().printer(f"出现意外的监控情况，启动分区检查 {check_str}", "Info", "green")
+                        await utils.reconnect()
+                except Exception:
+                    Printer().printer(traceback.format_exc(), "Error", "red")
+                finally:
+                    del self.monitor[roomid]
+
+    def append_to_TVlist(self, raffleid, real_roomid, time=''):
+        self.TV_raffleid_list.append(raffleid)
+        self.TV_roomid_list.append(real_roomid)
+        self.joined_TV.append(decimal_time())
+
+    def append2pushed_TVlist(self, real_roomid, area_id):
+        self.pushed_TV.append(decimal_time())
+        self.monitor[real_roomid] = self.monitor.get(real_roomid, 0) | 2**(int(area_id)-1)
+
+    def check_TVlist(self, raffleid):
+        if raffleid not in self.TV_raffleid_list:
             return True
         return False
-
-    @staticmethod
-    def check_activitylist(real_roomid, raffleid):
-        inst = Statistics.instance
-        if (real_roomid, raffleid) not in inst.activity_id_list:
-            return True
-        return False
-        
-    @staticmethod
-    def checklist():
-        print('目前activity任务队列状况:', Statistics.instance.activity_id_list)
-        print('TV:', Statistics.instance.TV_id_list)
