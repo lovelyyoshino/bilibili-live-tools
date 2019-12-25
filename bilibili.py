@@ -50,15 +50,15 @@ class bilibili():
                 inst.dic_bilibili['pcheaders']['cookie'] = dic[i]
                 inst.dic_bilibili['appheaders']['cookie'] = dic[i]
 
-    def calc_sign(self, str):
-        str = str + self.dic_bilibili['app_secret']
+    def calc_sign(self, str, app_secret=None):
+        str += app_secret or self.dic_bilibili['app_secret']
         hash = hashlib.md5()
         hash.update(str.encode('utf-8'))
         sign = hash.hexdigest()
         return sign
 
     def cnn_captcha(self, img):
-        url = "http://115.159.205.242:19951/captcha/v1"
+        url = "http://106.75.36.27:19951/captcha/v1"
         img = str(img, encoding='utf-8')
         json = {"image": img}
         ressponse = requests.post(url, json=json)
@@ -224,7 +224,7 @@ class bilibili():
         return response
 
     def request_getkey(self):
-        url = 'https://passport.bilibili.com/api/oauth2/getKey'
+        url = 'https://passport.snm0516.aisee.tv/api/oauth2/getKey'
         temp_params = 'appkey=' + self.dic_bilibili['appkey']
         sign = self.calc_sign(temp_params)
         params = {'appkey': self.dic_bilibili['appkey'], 'sign': sign}
@@ -264,19 +264,20 @@ class bilibili():
         return response1
 
     async def get_gift_of_TV(self, type, real_roomid, raffleid):
-        url = "https://api.live.bilibili.com/gift/v3/smalltv/join"
+        url = "https://api.live.bilibili.com/xlive/lottery-interface/v5/smalltv/join"
         data = {
             "roomid": real_roomid,
-            "raffleId": raffleid,
+            "id": raffleid,
             "type": type,
             "csrf_token": self.dic_bilibili['csrf'],
+            "csrf": self.dic_bilibili['csrf'],
             "visit_id": "8u0aig7b8100"
         }
         response2 = await self.bili_section_post(url, data=data, headers=self.dic_bilibili['pcheaders'])
         return response2
 
     async def get_gift_of_captain(self, roomid, id):
-        join_url = "https://api.live.bilibili.com/lottery/v2/lottery/join"
+        join_url = "https://api.live.bilibili.com/xlive/lottery-interface/v3/guard/join"
         payload = {"roomid": roomid, "id": id, "type": "guard",
                    "csrf_token": self.dic_bilibili['csrf']}
         response2 = await self.bili_section_post(join_url, data=payload, headers=self.dic_bilibili['pcheaders'])
@@ -312,7 +313,7 @@ class bilibili():
         return response
 
     async def get_giftlist_of_TV(self, real_roomid):
-        url = "https://api.live.bilibili.com/gift/v3/smalltv/check?roomid=" + \
+        url = "https://api.live.bilibili.com/xlive/lottery-interface/v1/lottery/Check?roomid=" + \
             str(real_roomid)
         headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36",
@@ -433,6 +434,12 @@ class bilibili():
             str(i) + '&number=' + str(g + 1)
         response1 = await self.bili_section_get(url1, headers=self.dic_bilibili['pcheaders'])
         return response1
+
+    async def get_winner_info(self, i, g):
+        url2 = 'https://api.live.bilibili.com/lottery/v1/box/getWinnerGroupInfo?aid=' + \
+            str(i) + '&number=' + str(g + 1)
+        response2 = await self.bili_section_get(url2, headers=self.dic_bilibili['pcheaders'])
+        return response2
 
     async def get_time_about_silver(self):
         time = CurrentTime()

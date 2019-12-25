@@ -5,6 +5,8 @@ import time
 import traceback
 import datetime
 import asyncio
+import queue
+from statistics import Statistics
 from printer import Printer
 
 
@@ -40,10 +42,10 @@ class OnlineHeart:
             Printer().printer("连接舰长服务器失败", "Error", "red")
             return
         for i in range(0, len(json_response)):
-            GuardId = json_response[i]['GuardId']
+            GuardId = json_response[i]['Id']
             if GuardId not in had_gotted_guard and GuardId != 0:
                 had_gotted_guard.append(GuardId)
-                OriginRoomId = json_response[i]['OriginRoomId']
+                OriginRoomId = json_response[i]['RoomId']
                 if not OriginRoomId == OnlineHeart.last_guard_room:
                     result = await utils.check_room_true(OriginRoomId)
                     if True in result:
@@ -54,31 +56,44 @@ class OnlineHeart:
                 response2 = await bilibili().get_gift_of_captain(OriginRoomId, GuardId)
                 json_response2 = await response2.json(content_type=None)
                 if json_response2['code'] == 0:
-                    Printer().printer(f"获取到房间 {OriginRoomId} 编号 {GuardId} 的上船亲密度: {json_response2['data']['message']}",
+                    Printer().printer(f"获取到房间 {OriginRoomId} 编号 {GuardId} 的上船奖励: "
+                                      f"{json_response2['data']['award_text']}" if json_response2['data']['award_text'] else
+                                      f"获取到房间 {OriginRoomId} 编号 {GuardId} 的上船奖励: "
+                                      f"{json_response2['data']['award_name']}X{json_response2['data']['award_num']}",
                                       "Lottery", "cyan")
-                elif json_response2['code'] == 400 and json_response2['msg'] == "你已经领取过啦":
-                    Printer().printer(
-                        f"房间 {OriginRoomId} 编号 {GuardId} 的上船亲密度已领过",
-                        "Info", "green")
-                elif json_response2['code'] == 400 and json_response2['msg'] == "访问被拒绝":
-                    Printer().printer(f"获取房间 {OriginRoomId} 编号 {GuardId} 的上船亲密度: {json_response2['message']}",
+                elif json_response2['code'] == -403 and json_response2['msg'] == "访问被拒绝":
+                    Printer().printer(f"获取房间 {OriginRoomId} 编号 {GuardId} 的上船奖励: {json_response2['message']}",
                                       "Lottery", "cyan")
                     print(json_response2)
+                elif json_response2['code'] == 400 and json_response2['msg'] == "你已经领取过啦":
+                    Printer().printer(f"房间 {OriginRoomId} 编号 {GuardId} 的上船奖励已领过",
+                                      "Info", "green")
                 else:
-                    Printer().printer(
-                        f"房间 {OriginRoomId} 编号 {GuardId}  的上船亲密度领取出错: {json_response2}",
-                        "Error", "red")
+                    Printer().printer(f"房间 {OriginRoomId} 编号 {GuardId}  的上船奖励领取出错: {json_response2}",
+                                      "Error", "red")
+                await asyncio.sleep(0.2)
 
+    async def check_winner(self, i, g, start_time):
+        # 开奖5s后检查是否中奖
+        await asyncio.sleep(time.mktime(time.strptime(start_time, '%Y-%m-%d %H:%M:%S')) - time.time() + 5)
+        response2 = await bilibili().get_winner_info(i, g)
+        json_response2 = await response2.json(content_type=None)
+        for winner in json_response2["data"]["winnerList"]:
+            if winner["uid"] == bilibili().dic_bilibili['uid']:
+                Printer().printer(f'实物抽奖中中奖: {winner["giftTitle"]}', "Lottery", "cyan")
+                Statistics().add_to_result(winner["giftTitle"], 1)
 
     async def draw_lottery(self):
-        black_list = ["123", "1111", "测试", "測試", "测一测", "ce-shi", "test", "T-E-S-T", "lala",  # 已经出现
+        black_list = ["123", "1111", "测试", "測試", "测一测", "ce-shi", "test", "T-E-S-T", "lala", "我是抽奖标题", # 已经出现
                       "測一測", "TEST", "Test", "t-e-s-t"]  # 合理猜想
-        last_lottery = 0
+        former_lottery = queue.Queue(maxsize=4)
+        [former_lottery.put(True) for _ in range(4)]
         for i in range(390, 600):
             response = await bilibili().get_lotterylist(i)
             json_response = await response.json()
+            former_lottery.get()
+            former_lottery.put(not json_response['code'])
             if json_response['code'] == 0:
-                last_lottery = 0
                 title = json_response['data']['title']
                 check = len(json_response['data']['typeB'])
                 for g in range(check):
@@ -97,11 +112,13 @@ class OnlineHeart:
                             response1 = await bilibili().get_gift_of_lottery(i, g)
                             json_response1 = await response1.json(content_type=None)
                             Printer().printer(f"参与『{title}>>>{jp_list}』抽奖回显: {json_response1}", "Lottery", "cyan")
+                            start_time = json_response['data']['typeB'][g]["startTime"]
+                            asyncio.ensure_future(self.check_winner(i, g, start_time))
             else:
-                if not last_lottery == 0:  # 因为有中途暂时空一个-400的情况
+                if not any(former_lottery.queue):  # 检查最近4个活动id是否都-400
                     break
-                else:
-                    last_lottery = json_response['code']
+            await asyncio.sleep(0.2)
+        del former_lottery
 
     async def run(self):
         while 1:
